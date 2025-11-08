@@ -1,3 +1,4 @@
 VEGA/bin/*
 VEGA/obj/*
 .vscode/*
+appsettings.json
