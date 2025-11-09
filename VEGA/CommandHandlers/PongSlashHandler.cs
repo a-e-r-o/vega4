@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NetCord;
 using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
@@ -9,9 +10,8 @@ public class PongSlashHandler : ISlashCommandHandler
 {
     public string Name => "ping";
     public string Description => "Should responds with Pong!";
-
-    public Task<string> CommandDelegate(Vega vega)
+    public async Task<string> CommandDelegate(ApplicationCommandContext context, Vega vega)
     {
-       return Task.FromResult("Pong!");
+        return "Pong!";
     }
 }

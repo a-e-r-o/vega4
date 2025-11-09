@@ -18,11 +18,14 @@ config.BotToken = configuration.GetValue<string>("botToken") ?? throw new Except
 var vega = new Vega(config);
 
 // Register handlers
-vega.RegisterHandler(new PongSlashHandler());
-vega.RegisterHandler(new UsernameUserHandler());
-vega.RegisterHandler(new LengthMsgHandler());
-vega.RegisterHandler(new ClearCommandsSlashHandler());
+var handlers = new List<IHandlerBase>{
+    new PongSlashHandler(),
+    new UsernameUserHandler(),
+    new LengthMsgHandler(),
+    new ClearCommandsSlashHandler(),
+    new ClearMsgsSlashHandler()
+};
 
 // Initi and launch
-await vega.Initialize();
+await vega.Initialize(handlers);
 await vega.Launch();

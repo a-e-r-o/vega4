@@ -7,6 +7,8 @@ using NetCord.Services;
 using NetCord.Rest;
 using System.Threading.Tasks;
 using NetCord.Services.Commands;
+using Handlers;
+using VEGA.Core;
 
 namespace Configurators
 {
@@ -15,21 +17,62 @@ namespace Configurators
     /// </summary>
     public class ApplicationCommandServiceBuilder
     {
-        private ApplicationCommandService<ApplicationCommandContext> _commandService;
+        private ApplicationCommandService<ApplicationCommandContext> _appCommandService;
 
         private ApplicationCommandServiceBuilder()
         {
-            _commandService = new ApplicationCommandService<ApplicationCommandContext>();
+            _appCommandService = new ApplicationCommandService<ApplicationCommandContext>();
         }
 
         public static ApplicationCommandServiceBuilder Create()
         {
-            return new ApplicationCommandServiceBuilder();    
-        } 
+            return new ApplicationCommandServiceBuilder();
+        }
 
-        public ApplicationCommandService<ApplicationCommandContext> Build()
+        public ApplicationCommandServiceBuilder AddCommandHandlers(IList<IHandlerBase> handlers, Vega VegaInstance)
         {
-            return _commandService;
+            foreach (var handler in handlers)
+            {
+                switch (handler)
+                {
+                    case ISlashCommandHandler slashCommandHandler:
+                        _appCommandService.AddSlashCommand(
+                            new SlashCommandBuilder(
+                                slashCommandHandler.Name,
+                                slashCommandHandler.Description,
+                                (ApplicationCommandContext context) => slashCommandHandler.CommandDelegate(context, VegaInstance)
+                            )
+                        );
+                        break;
+
+                    case IMessageCommandHandler messageHandler:
+                        _appCommandService.AddMessageCommand(
+                            new MessageCommandBuilder(
+                                messageHandler.Name,
+                                (RestMessage message) => messageHandler.CommandDelegate(message, VegaInstance)
+                            )
+                        );
+                        break;
+                    case IUserCommandHandler userHandler:
+                        _appCommandService.AddUserCommand(
+                            new UserCommandBuilder(
+                                userHandler.Name,
+                                (User user) => userHandler.CommandDelegate(user, VegaInstance)
+                            )
+                        );
+                        break;
+                }
+            }
+            // Add any default configuration here if needed
+            return this;
+        }
+
+        public async Task<ApplicationCommandService<ApplicationCommandContext>> BuildAsync(GatewayClient client)
+        {
+            // Register all commands to Discord
+            await _appCommandService.RegisterCommandsAsync(client.Rest, client.Id);
+            
+            return _appCommandService;
         }
     }
 }

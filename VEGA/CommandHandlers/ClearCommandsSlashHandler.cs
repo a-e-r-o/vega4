@@ -10,7 +10,7 @@ public class ClearCommandsSlashHandler : ISlashCommandHandler
     public string Name => "clearcommands";
     public string Description => "Reset all registered commands.";
 
-    public async Task<string> CommandDelegate(Vega vega)
+    public async Task<string> CommandDelegate(ApplicationCommandContext context, Vega vega)
     {
         await vega.ClearAllCommandsOnDiscordAsync();
         return "cleared";

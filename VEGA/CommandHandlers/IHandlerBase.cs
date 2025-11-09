@@ -14,7 +14,7 @@ public interface IHandlerBase
 
 public interface ISlashCommandHandler : IHandlerBase
 {
-    Task<string> CommandDelegate(Vega vega);
+    Task<string> CommandDelegate(ApplicationCommandContext context, Vega vega);
 }
 
 public interface IMessageCommandHandler : IHandlerBase

@@ -24,63 +24,24 @@ public class Vega
 
     # region Constructor and Initializing
 
-    private readonly List<IHandlerBase> _handlers = new();
-
     public Vega(Configuration config)
     {
         Configuration = config;
     }
 
-    public void RegisterHandler(IHandlerBase handler)
-    {
-        _handlers.Add(handler);
-    }
-
-    public async Task Initialize()
+    public async Task Initialize(List<IHandlerBase> handlers)
     {
         // Use the fluent GatewayClientBuilder to create and configure the client and command service
         Client = Configurators.GatewayClientBuilder
-                        .Create(Configuration.BotToken)
-                        .Build();
-
-        ApplicationCommandService = new ApplicationCommandService<ApplicationCommandContext>();
+                    .Create(Configuration.BotToken)
+                    .Build();
 
         // Configure all registered handlers
-        foreach (var handler in _handlers)
-        {
-            switch (handler)
-            {
-                case ISlashCommandHandler slashCommandHandler:
-                    ApplicationCommandService.AddSlashCommand(
-                        new SlashCommandBuilder(
-                            slashCommandHandler.Name,
-                            slashCommandHandler.Description,
-                            () => slashCommandHandler.CommandDelegate(this)
-                        )
-                    );
-                    break;
-
-                case IMessageCommandHandler messageHandler:
-                    ApplicationCommandService.AddMessageCommand(
-                        new MessageCommandBuilder(
-                            messageHandler.Name,
-                            (RestMessage message) => messageHandler.CommandDelegate(message, this)
-                        )
-                    );
-                    break;
-                case IUserCommandHandler userHandler:
-                    ApplicationCommandService.AddUserCommand(
-                        new UserCommandBuilder(
-                            userHandler.Name,
-                            (User user) => userHandler.CommandDelegate(user, this)
-                        )
-                    );
-                    break;
-            }
-        }
-
         // Register all commands to Discord
-        await ApplicationCommandService.RegisterCommandsAsync(Client.Rest, Client.Id);
+        ApplicationCommandService = await Configurators.ApplicationCommandServiceBuilder
+                                            .Create()
+                                            .AddCommandHandlers(handlers, this)
+                                            .BuildAsync(Client);
 
         // Link events to handlers
         Client.Connecting += async () => Console.WriteLine("connecting...");
