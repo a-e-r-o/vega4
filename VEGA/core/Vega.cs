@@ -29,7 +29,7 @@ public class Vega
         Configuration = config;
     }
 
-    public async Task Initialize(List<IHandlerBase> handlers)
+    public async Task Initialize()
     {
         // Use the fluent GatewayClientBuilder to create and configure the client and command service
         Client = Configurators.GatewayClientBuilder
@@ -40,12 +40,10 @@ public class Vega
         // Register all commands to Discord
         ApplicationCommandService = await Configurators.ApplicationCommandServiceBuilder
                                             .Create()
-                                            .AddCommandHandlers(handlers, this)
+                                            .AddCommandHandlers(this)
                                             .BuildAsync(Client);
 
-        // Link events to handlers
-        Client.Connecting += async () => Console.WriteLine("connecting...");
-        Client.Connect += async () => Console.WriteLine("connected");
+        ConfigureMiscHandlers();
 
         Client.InteractionCreate += async interaction =>
         {
@@ -73,6 +71,13 @@ public class Vega
         await Task.Delay(-1);
     }
 
+    public void ConfigureMiscHandlers()
+    {
+        // Basically console logs
+        Client.Connecting += async () => MiscHandlers.Connecting();
+        Client.Connect += async () => MiscHandlers.Connected();
+    }
+
     # endregion
 
     // Clear local ApplicationCommandService (remove all local commands)
@@ -90,59 +95,5 @@ public class Vega
             await Client.Rest.BulkOverwriteGuildApplicationCommandsAsync(Client.Id, guildId.Value, empty);
         else
             await Client.Rest.BulkOverwriteGlobalApplicationCommandsAsync(Client.Id, empty);
-    }
-
-    // Remove a single command on Discord by name (returns true if deleted)
-    public async Task<bool> RemoveCommandByNameOnDiscordAsync(string commandName, ulong? guildId = null)
-    {
-        if (guildId.HasValue)
-        {
-            var registered = await Client.Rest.GetGuildApplicationCommandsAsync(Client.Id, guildId.Value);
-            var item = registered.FirstOrDefault(c => string.Equals(c.Name, commandName, StringComparison.OrdinalIgnoreCase));
-            if (item != null)
-            {
-                await Client.Rest.DeleteGuildApplicationCommandAsync(Client.Id, guildId.Value, item.Id);
-                return true;
-            }
-            return false;
-        }
-        else
-        {
-            var registered = await Client.Rest.GetGlobalApplicationCommandsAsync(Client.Id);
-            var item = registered.FirstOrDefault(c => string.Equals(c.Name, commandName, StringComparison.OrdinalIgnoreCase));
-            if (item != null)
-            {
-                await Client.Rest.DeleteGlobalApplicationCommandAsync(Client.Id, item.Id);
-                return true;
-            }
-            return false;
-        }
-    }
-
-    // Sync local ApplicationCommandService commands to Discord by bulk-overwriting with the local set
-    // Note: ApplicationCommandService.GetCommands() must return a collection of ApplicationCommandProperties or be transformable.
-    public async Task SyncLocalCommandsToDiscordAsync(ulong? guildId = null)
-    {
-        // Try to get ApplicationCommandProperties directly from the service
-        // If the library does not expose that, you'd need to rebuild the properties from your builders/modules.
-        var localCommands = ApplicationCommandService.GetCommands();
-
-        // Defensive: if the returned items are already ApplicationCommandProperties, use them
-        if (localCommands is IEnumerable<ApplicationCommandProperties> props)
-        {
-            var arr = props.ToArray();
-            if (guildId.HasValue)
-                await Client.Rest.BulkOverwriteGuildApplicationCommandsAsync(Client.Id, guildId.Value, arr);
-            else
-                await Client.Rest.BulkOverwriteGlobalApplicationCommandsAsync(Client.Id, arr);
-            return;
-        }
-
-        // Otherwise, try to map them. This part depends on what GetCommands() returns in your NetCord version.
-        // As a fallback we will clear all commands (safe) — you can customize to rebuild desired commands.
-        if (guildId.HasValue)
-            await Client.Rest.BulkOverwriteGuildApplicationCommandsAsync(Client.Id, guildId.Value, Array.Empty<ApplicationCommandProperties>());
-        else
-            await Client.Rest.BulkOverwriteGlobalApplicationCommandsAsync(Client.Id, Array.Empty<ApplicationCommandProperties>());
     }
 }

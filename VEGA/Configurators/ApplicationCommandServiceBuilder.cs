@@ -29,8 +29,40 @@ namespace Configurators
             return new ApplicationCommandServiceBuilder();
         }
 
-        public ApplicationCommandServiceBuilder AddCommandHandlers(IList<IHandlerBase> handlers, Vega VegaInstance)
+        public ApplicationCommandServiceBuilder AddCommandHandlers(Vega VegaInstance)
         {
+            var handlerTypes = Assembly.GetExecutingAssembly()
+                .GetTypes()
+                .Where(t => t.Namespace == "Handlers"
+                        && t.IsClass
+                        && !t.IsAbstract
+                        && typeof(IHandlerBase).IsAssignableFrom(t));
+            var handlers = new List<IHandlerBase>();
+                        
+            foreach (var type in handlerTypes)
+            {
+                try
+                {
+                    var handler = Activator.CreateInstance(type) as IHandlerBase;
+
+                    if (handler != null)
+                    {
+                        Console.WriteLine($"Registering handler: {type.Name}");
+                        handlers.Add(handler);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failed to create instance of handler: {type.Name}");
+                        throw new Exception("Null handler type");
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine($"Failed to create instance of handler: {type.Name}");
+                    continue;
+                }
+            }
+
             foreach (var handler in handlers)
             {
                 switch (handler)

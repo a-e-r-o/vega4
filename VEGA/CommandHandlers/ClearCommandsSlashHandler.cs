@@ -12,7 +12,7 @@ public class ClearCommandsSlashHandler : ISlashCommandHandler
 
     public async Task<string> CommandDelegate(ApplicationCommandContext context, Vega vega)
     {
-        await vega.ClearAllCommandsOnDiscordAsync();
+        await vega.ClearAllCommandsOnDiscordAsync(context.Guild?.Id);
         return "cleared";
     }
 }
