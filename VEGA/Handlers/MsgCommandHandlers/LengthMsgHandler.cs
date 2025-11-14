@@ -15,7 +15,7 @@ public class LengthMsgHandler : IMessageCommandHandler
             InteractionCallback.Message(
                 new InteractionMessageProperties
                 {
-                    Content = "message.Content.Length.ToString()"
+                    Content = message.Content.Length.ToString()
                 }
             )
         );
