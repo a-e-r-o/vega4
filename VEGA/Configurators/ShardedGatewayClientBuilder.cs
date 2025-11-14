@@ -13,29 +13,32 @@ namespace Configurators
     /// <summary>
     /// Small fluent builder to create and configure a GatewayClient together with an ApplicationCommandService.
     /// </summary>
-    public class GatewayClientBuilder
+    public class ShardedGatewayClientBuilder
     {
-        private readonly GatewayClient _client;
+        private readonly ShardedGatewayClient _client;
 
-        private GatewayClientBuilder(string token)
+        private ShardedGatewayClientBuilder(string token)
         {
-            _client = new GatewayClient(new BotToken(token), new GatewayClientConfiguration
-            {
-                Intents = GatewayIntents.GuildMessages | GatewayIntents.DirectMessages | GatewayIntents.MessageContent,
-                Logger = new ConsoleLogger(),
-            });
+            _client = new ShardedGatewayClient
+            (
+                new BotToken(token), new ShardedGatewayClientConfiguration
+                {
+                    IntentsFactory = (shard) => GatewayIntents.GuildMessages | GatewayIntents.DirectMessages | GatewayIntents.MessageContent,
+                    LoggerFactory = ShardedConsoleLogger.GetFactory()
+                }
+            );
         }
 
-        public static GatewayClientBuilder Create(string token)
+        public static ShardedGatewayClientBuilder Create(string token)
         {
-            return new GatewayClientBuilder(token);    
+            return new ShardedGatewayClientBuilder(token);    
         } 
 
         /// <summary>
         /// Builds the configured client and registers application commands (async because registration calls the API).
         /// Returns the created GatewayClient and the configured ApplicationCommandService.
         /// </summary>
-        public GatewayClient Build()
+        public ShardedGatewayClient Build()
         {
             return _client;
         }

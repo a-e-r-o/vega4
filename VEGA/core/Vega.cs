@@ -15,12 +15,13 @@ namespace VEGA.Core;
 
 public class Vega
 {
+    public DateTime StartTime { get; } = DateTime.UtcNow;
     // whole configuration
-    public Configuration Configuration { get; set; }
+    private Configuration Configuration { get; set; }
     // Client is created during Initialize; use null-forgiving here and assign in configureGatewayClient
-    public GatewayClient Client { get; set; } = null!;
+    private ShardedGatewayClient ShardedClient { get; set; } = null!;
     // Initialize the command service so the property is non-null after construction
-    public ApplicationCommandService<ApplicationCommandContext> ApplicationCommandService { get; set; } = null!;
+    private ApplicationCommandService<ApplicationCommandContext> ApplicationCommandService { get; set; } = null!;
 
     # region Constructor and Initializing
 
@@ -32,25 +33,28 @@ public class Vega
     public async Task Initialize()
     {
         // Use the fluent GatewayClientBuilder to create and configure the client and command service
-        Client = Configurators.GatewayClientBuilder
-                    .Create(Configuration.BotToken)
-                    .Build();
+        ShardedClient = Configurators.ShardedGatewayClientBuilder
+                            .Create(Configuration.BotToken)
+                            .Build();
 
         // Configure all registered handlers
         // Register all commands to Discord
         ApplicationCommandService = await Configurators.ApplicationCommandServiceBuilder
                                             .Create()
                                             .AddCommandHandlers(this)
-                                            .BuildAsync(Client);
+                                            .BuildAsync(ShardedClient);
 
         ConfigureMiscHandlers();
 
-        Client.InteractionCreate += async interaction =>
+        ShardedClient.InteractionCreate += async (client, interaction) =>
         {
             if (interaction is not ApplicationCommandInteraction applicationCommandInteraction)
                 return;
 
-            var result = await ApplicationCommandService.ExecuteAsync(new ApplicationCommandContext(applicationCommandInteraction, Client));
+            IExecutionResult result = await ApplicationCommandService.ExecuteAsync
+            (
+                new ApplicationCommandContext(applicationCommandInteraction, client)
+            );
 
             if (result is not IFailResult failResult)
                 return;
@@ -67,15 +71,15 @@ public class Vega
 
     public async Task Launch()
     {
-        await Client.StartAsync();
+        await ShardedClient.StartAsync();
         await Task.Delay(-1);
     }
 
     public void ConfigureMiscHandlers()
     {
         // Basically console logs
-        Client.Connecting += async () => MiscHandlers.Connecting();
-        Client.Connect += async () => MiscHandlers.Connected();
+        ShardedClient.Connecting += async (client) => MiscHandlers.Connecting(client);
+        ShardedClient.Connect += async (client) => MiscHandlers.Connected(client);
     }
 
     # endregion
@@ -92,8 +96,8 @@ public class Vega
     {
         var empty = Array.Empty<ApplicationCommandProperties>();
         if (guildId.HasValue)
-            await Client.Rest.BulkOverwriteGuildApplicationCommandsAsync(Client.Id, guildId.Value, empty);
+            await ShardedClient.Rest.BulkOverwriteGuildApplicationCommandsAsync(ShardedClient.Id, guildId.Value, empty);
         else
-            await Client.Rest.BulkOverwriteGlobalApplicationCommandsAsync(Client.Id, empty);
+            await ShardedClient.Rest.BulkOverwriteGlobalApplicationCommandsAsync(ShardedClient.Id, empty);
     }
 }

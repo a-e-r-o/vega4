@@ -10,7 +10,7 @@ public class ClearMsgsSlashHandler : ISlashCommandHandler
 {
     public string Name => "clear";
     public string Description => "Deletes recent messages";
-    public async Task<string> CommandDelegate(ApplicationCommandContext context, Vega vega)
+    public async Task CommandDelegate(ApplicationCommandContext context, Vega vega)
     {
         IAsyncEnumerable<NetCord.Rest.RestMessage> messages = context.Channel.GetMessagesAsync();
         List<ulong> ids = new();
@@ -23,6 +23,13 @@ public class ClearMsgsSlashHandler : ISlashCommandHandler
 
         //await vega.Client.Rest.DeleteMessagesAsync(context.Channel.Id, ids.ToArray());
 
-        return "Cleared messages!";
+        await context.Interaction.SendResponseAsync(
+            NetCord.Rest.InteractionCallback.Message(
+                new NetCord.Rest.InteractionMessageProperties
+                {
+                    Content = "Cleared messages!"
+                }
+            )
+        );
     }
 }

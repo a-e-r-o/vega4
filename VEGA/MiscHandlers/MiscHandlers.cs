@@ -1,15 +1,14 @@
-using System;
+using NetCord.Gateway;
 
 public static class MiscHandlers
 {
-    public static void Connected()
+    public static void Connected(GatewayClient client)
     {
         Console.WriteLine("Connected");
     }
 
-    public static void Connecting()
+    public static void Connecting(GatewayClient client)
     {
-        Console.WriteLine("Connecting...");          
+        Console.WriteLine("Connecting...");
     }
-    // Add any miscellaneous handler registration or configuration methods here in the future
 }

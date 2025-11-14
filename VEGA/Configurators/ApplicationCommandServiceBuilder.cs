@@ -76,12 +76,11 @@ namespace Configurators
                             )
                         );
                         break;
-
                     case IMessageCommandHandler messageHandler:
                         _appCommandService.AddMessageCommand(
                             new MessageCommandBuilder(
                                 messageHandler.Name,
-                                (RestMessage message) => messageHandler.CommandDelegate(message, VegaInstance)
+                                (ApplicationCommandContext context, RestMessage message) => messageHandler.CommandDelegate(context, message, VegaInstance)
                             )
                         );
                         break;
@@ -89,7 +88,7 @@ namespace Configurators
                         _appCommandService.AddUserCommand(
                             new UserCommandBuilder(
                                 userHandler.Name,
-                                (User user) => userHandler.CommandDelegate(user, VegaInstance)
+                                (ApplicationCommandContext context, User user) => userHandler.CommandDelegate(context, user, VegaInstance)
                             )
                         );
                         break;
@@ -99,7 +98,7 @@ namespace Configurators
             return this;
         }
 
-        public async Task<ApplicationCommandService<ApplicationCommandContext>> BuildAsync(GatewayClient client)
+        public async Task<ApplicationCommandService<ApplicationCommandContext>> BuildAsync(ShardedGatewayClient client)
         {
             // Register all commands to Discord
             await _appCommandService.RegisterCommandsAsync(client.Rest, client.Id);
