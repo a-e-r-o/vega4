@@ -1,5 +1,7 @@
-using NetCord.Services.ApplicationCommands;
+using NetCord;
+using NetCord.Gateway;
 using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
 using VEGA.Core;
 
 namespace Handlers;
@@ -8,31 +10,38 @@ public class UpSlashHandler : ISlashCommandHandler
 {
     public string Name => "up";
     public string Description => "Indicates uptime and other infos about the bot.";
-    public async Task CommandDelegate(ApplicationCommandContext context, Vega vega)
+    public async Task Execute(ApplicationCommandContext context, Vega vega)
     {
-        var embed = new NetCord.Rest.EmbedProperties
+        var self = await context.Client.Rest.GetUserAsync(context.Client.Id);
+
+        var embed = new EmbedProperties
         {
-            Title = "V E G A",
+            Title = "ᴠ.ᴇ.ɢ.ᴀ.",
+            Url = "https://github.com/a-e-r-o/vega4",
+            Color = new Color(96, 240, 213),
+            Thumbnail = new EmbedThumbnailProperties(self.GetAvatarUrl()?.ToString()),
             Fields = new[]
             {
-                new NetCord.Rest.EmbedFieldProperties
+                new EmbedFieldProperties
                 {
                     Name = "Uptime",
-                    Value = (DateTime.UtcNow - vega.StartTime).ToString(@"dd\.hh\:mm\:ss"),
-                    Inline = false,
+                    Value = (DateTime.UtcNow - vega.StartTime).ToString(@"dd\.hh\:mm\:ss")
                 },
-                new NetCord.Rest.EmbedFieldProperties
+                new EmbedFieldProperties
                 {
-                    Name = "Created at",
+                    Name = "Started at",
                     Value = string.Format
                             (
                                 "{0} UTC",
                                 vega.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
                                 vega.StartTime
-                            ),
-                    Inline = false
-                },
+                            )
+                }
             },
+            Footer = new EmbedFooterProperties
+            {
+                Text = "UwU"
+            }
         };
 
         await context.Interaction.SendResponseAsync(

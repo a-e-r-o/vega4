@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using NetCord;
-using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
 using VEGA.Core;
 
@@ -10,7 +7,9 @@ public class ClearMsgsSlashHandler : ISlashCommandHandler
 {
     public string Name => "clear";
     public string Description => "Deletes recent messages";
-    public async Task CommandDelegate(ApplicationCommandContext context, Vega vega)
+
+
+    public async Task Execute(ApplicationCommandContext context, Vega vega)
     {
         IAsyncEnumerable<NetCord.Rest.RestMessage> messages = context.Channel.GetMessagesAsync();
         List<ulong> ids = new();
