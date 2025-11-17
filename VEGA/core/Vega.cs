@@ -1,4 +1,3 @@
-using Handlers;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
@@ -92,7 +91,7 @@ public class Vega
     }
 
     // Clear all commands on Discord (global or for a specific guild)
-    public async Task ClearAllCommandsOnDiscordAsync(ulong? guildId = null)
+    public async Task ClearAllRegisteredCommandsAsync(ulong? guildId = null)
     {
         var empty = Array.Empty<ApplicationCommandProperties>();
         if (guildId.HasValue)

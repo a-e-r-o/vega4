@@ -23,7 +23,7 @@ namespace Configurators
             (
                 new BotToken(token), new ShardedGatewayClientConfiguration
                 {
-                    IntentsFactory = (shard) => GatewayIntents.GuildMessages | GatewayIntents.DirectMessages | GatewayIntents.MessageContent,
+                    IntentsFactory = (shard) => GatewayIntents.GuildMessages | GatewayIntents.DirectMessages | GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildUsers,
                     LoggerFactory = ShardedConsoleLogger.GetFactory()
                 }
             );

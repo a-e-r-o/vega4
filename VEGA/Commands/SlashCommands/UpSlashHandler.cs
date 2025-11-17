@@ -1,18 +1,15 @@
 using NetCord;
-using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using VEGA.Core;
 
-namespace Handlers;
+namespace Commands;
 
-public class UpSlashHandler : ISlashCommandHandler
+public class UpSlashHandler : ApplicationCommandModule<ApplicationCommandContext>
 {
-    public string Name => "up";
-    public string Description => "Indicates uptime and other infos about the bot.";
-    public async Task Execute(ApplicationCommandContext context, Vega vega)
+    [SlashCommand("up", "Indicates uptime and other infos about the bot")]
+    public async Task Execute()
     {
-        var self = await context.Client.Rest.GetUserAsync(context.Client.Id);
+        var self = await Context.Client.Rest.GetUserAsync(Context.Client.Id);
 
         var embed = new EmbedProperties
         {
@@ -25,7 +22,8 @@ public class UpSlashHandler : ISlashCommandHandler
                 new EmbedFieldProperties
                 {
                     Name = "Uptime",
-                    Value = (DateTime.UtcNow - vega.StartTime).ToString(@"dd\.hh\:mm\:ss")
+                    //Value = (DateTime.UtcNow - vega.StartTime).ToString(@"dd\.hh\:mm\:ss")
+                    Value = "WIP"
                 },
                 new EmbedFieldProperties
                 {
@@ -33,8 +31,9 @@ public class UpSlashHandler : ISlashCommandHandler
                     Value = string.Format
                             (
                                 "{0} UTC",
-                                vega.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                                vega.StartTime
+                                "WIP"
+                                //vega.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                                //vega.StartTime
                             )
                 }
             },
@@ -44,7 +43,7 @@ public class UpSlashHandler : ISlashCommandHandler
             }
         };
 
-        await context.Interaction.SendResponseAsync(
+        await Context.Interaction.SendResponseAsync(
             InteractionCallback.Message(
                 new InteractionMessageProperties
                 {
