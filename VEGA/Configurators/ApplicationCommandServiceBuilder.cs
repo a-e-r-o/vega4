@@ -1,14 +1,7 @@
 using System.Reflection;
-using NetCord;
 using NetCord.Gateway;
-using NetCord.Logging;
 using NetCord.Services.ApplicationCommands;
-using NetCord.Services;
-using NetCord.Rest;
-using System.Threading.Tasks;
-using NetCord.Services.Commands;
 using VEGA.Core;
-using Commands;
 
 namespace Configurators
 {
@@ -33,7 +26,7 @@ namespace Configurators
         {
             var commandModules = Assembly.GetExecutingAssembly()
                 .GetTypes()
-                .Where(t => t.Namespace == "Commands"
+                .Where(t => (t.Namespace == "SlashCommands" || t.Namespace == "UserCommands" || t.Namespace == "MessageCommands")
                         && t.IsClass
                         && !t.IsAbstract
                         && typeof(ApplicationCommandModule<ApplicationCommandContext>).IsAssignableFrom(t));

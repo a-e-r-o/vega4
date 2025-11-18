@@ -3,7 +3,7 @@ using NetCord.Rest;
 using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
 
-namespace Commands;
+namespace SlashCommands;
 
 public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
 {

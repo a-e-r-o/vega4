@@ -2,7 +2,7 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
-namespace Commands;
+namespace SlashCommands;
 
 public class Up : ApplicationCommandModule<ApplicationCommandContext>
 {

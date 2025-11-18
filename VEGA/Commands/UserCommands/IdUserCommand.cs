@@ -3,7 +3,7 @@ using NetCord.Rest;
 using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
 
-namespace Commands;
+namespace UserCommands;
 
 public class IdModule : ApplicationCommandModule<ApplicationCommandContext>
 {

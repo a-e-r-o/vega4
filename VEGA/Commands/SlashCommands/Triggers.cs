@@ -2,7 +2,7 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
-namespace Commands;
+namespace SlashCommands;
 
 [SlashCommand("trigger", "Manage triggers patterns for this server")]
 public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
