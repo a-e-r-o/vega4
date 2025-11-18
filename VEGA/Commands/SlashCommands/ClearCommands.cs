@@ -1,13 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using NetCord;
 using NetCord.Rest;
 using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
-using VEGA.Core;
 
 namespace Commands;
 
-public class ClearCommandsSlashHandler :  ApplicationCommandModule<ApplicationCommandContext>
+public class ClearCommands :  ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("clearcommands", "Erase all registered commands for this bot")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]

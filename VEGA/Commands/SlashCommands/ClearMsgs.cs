@@ -5,7 +5,7 @@ using NetCord.Services.ApplicationCommands;
 
 namespace Commands;
 
-public class ClearMsgsSlashHandler :  ApplicationCommandModule<ApplicationCommandContext>
+public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("clear", "Deletes recent messages")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]

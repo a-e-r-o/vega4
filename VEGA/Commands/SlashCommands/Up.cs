@@ -4,7 +4,7 @@ using NetCord.Services.ApplicationCommands;
 
 namespace Commands;
 
-public class UpSlashHandler : ApplicationCommandModule<ApplicationCommandContext>
+public class Up : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("up", "Indicates uptime and other infos about the bot")]
     public async Task Execute()
