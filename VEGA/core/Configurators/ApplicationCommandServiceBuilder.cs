@@ -1,9 +1,10 @@
 using System.Reflection;
+using Core;
+using Microsoft.Extensions.DependencyInjection;
 using NetCord.Gateway;
 using NetCord.Services.ApplicationCommands;
-using VEGA.Core;
 
-namespace Configurators
+namespace Core.Configurators
 {
     /// <summary>
     /// Small fluent builder to create and configure a GatewayClient together with an ApplicationCommandService.
@@ -22,7 +23,7 @@ namespace Configurators
             return new ApplicationCommandServiceBuilder();
         }
 
-        public ApplicationCommandServiceBuilder AddCommandHandlers(Vega VegaInstance)
+        public ApplicationCommandServiceBuilder AddCommandHandlers()
         {
             var commandModules = Assembly.GetExecutingAssembly()
                 .GetTypes()
@@ -31,9 +32,9 @@ namespace Configurators
                         && !t.IsAbstract
                         && typeof(ApplicationCommandModule<ApplicationCommandContext>).IsAssignableFrom(t));
 
-            foreach (var module in commandModules)
+            foreach (var moduleType in commandModules)
             {
-                _appCommandService.AddModule(module);            
+                _appCommandService.AddModule(moduleType);
             }
 
             // Add any default configuration here if needed

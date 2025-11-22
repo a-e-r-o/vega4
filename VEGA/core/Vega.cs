@@ -7,16 +7,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using VEGA.Core.Models;
+using Core.Models;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace VEGA.Core;
+namespace Core;
 
 public class Vega
 {
     public DateTime StartTime { get; } = DateTime.UtcNow;
     // whole configuration
-    private Configuration Configuration { get; set; }
+    private VegaConfiguration Configuration { get; set; }
     // Client is created during Initialize; use null-forgiving here and assign in configureGatewayClient
     private ShardedGatewayClient ShardedClient { get; set; } = null!;
     // Initialize the command service so the property is non-null after construction
@@ -24,7 +24,7 @@ public class Vega
 
     # region Constructor and Initializing
 
-    public Vega(Configuration config)
+    public Vega(VegaConfiguration config)
     {
         Configuration = config;
     }
@@ -38,9 +38,11 @@ public class Vega
 
         // Configure all registered handlers
         // Register all commands to Discord
+        var provider = ServiceRegistry.ServiceProvider ?? throw new InvalidOperationException("ServiceProvider not available for building command modules");
+
         ApplicationCommandService = await Configurators.ApplicationCommandServiceBuilder
                                             .Create()
-                                            .AddCommandHandlers(this)
+                                            .AddCommandHandlers()
                                             .BuildAsync(ShardedClient);
 
         ConfigureMiscHandlers();

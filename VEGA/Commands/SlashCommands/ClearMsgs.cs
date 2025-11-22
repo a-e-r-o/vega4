@@ -11,8 +11,14 @@ public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.ManageMessages)]
     [RequireBotPermissions<ApplicationCommandContext>(Permissions.ManageMessages)]
-    public async Task Clear(
-        [SlashCommandParameter(Name = "count", Description = "Number of messages to delete")] int count
+    public async Task Execute(
+        [SlashCommandParameter(
+            Name = "count",
+            Description = "Number of messages to delete",
+            MaxValue = 100,
+            MinValue = 1
+        )]
+        int count
     )
     {
         await Context.Interaction.SendResponseAsync(
@@ -31,6 +37,12 @@ public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
 
         //await Context.Client.Rest.DeleteMessagesAsync(Context.Channel.Id, ids.ToArray());
 
-        await Context.Interaction.SendFollowupMessageAsync($"Cleared {ids.Count} messages!");
+        await Context.Interaction.SendFollowupMessageAsync(
+            new InteractionMessageProperties
+            {
+                Content = $"Cleared {ids.Count} messages!",
+                Flags = MessageFlags.Ephemeral
+            }
+        );
     }
 }

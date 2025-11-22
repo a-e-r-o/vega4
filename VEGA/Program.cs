@@ -1,16 +1,28 @@
 ﻿using Microsoft.Extensions.Configuration;
-using VEGA.Core.Models;
-using VEGA.Core;
+using Microsoft.Extensions.DependencyInjection;
+using Core.Models;
+using Core;
 
 // Configuration
-var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
-IConfiguration configuration = builder.Build();
+IConfiguration configuration = new ConfigurationBuilder()
+                                    .AddJsonFile("appsettings.json")
+                                    .Build();
 
-Configuration config = new Configuration();
-config.BotToken = configuration.GetValue<string>("botToken") ?? throw new Exception("token not found");
+VegaConfiguration config = new VegaConfiguration(configuration.GetValue<string>("botToken") ?? throw new Exception("token not found"));
 
-// Create main Vega instance
-var vega = new Vega(config);
+// Build DI container
+var serviceProvider = new ServiceCollection()
+                            .AddSingleton(config)
+                            .AddSingleton(sp => new Vega(sp.GetRequiredService<VegaConfiguration>()))
+                            .AddScoped(sp => new AppDbContext(sp.GetRequiredService<VegaConfiguration>()))
+                            .AddLogging()
+                            .BuildServiceProvider();
+  
+// Expose provider via ServiceRegistry for parts that are not created via DI
+ServiceRegistry.ServiceProvider = serviceProvider;
+
+// Resolve Vega from DI (ensures ctor dependencies are injected)
+var vega = serviceProvider.GetRequiredService<Vega>();
 
 // Initi and launch
 await vega.Initialize();

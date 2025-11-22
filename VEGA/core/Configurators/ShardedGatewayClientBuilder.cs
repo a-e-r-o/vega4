@@ -8,7 +8,7 @@ using NetCord.Rest;
 using System.Threading.Tasks;
 using NetCord.Services.Commands;
 
-namespace Configurators
+namespace Core.Configurators
 {
     /// <summary>
     /// Small fluent builder to create and configure a GatewayClient together with an ApplicationCommandService.

@@ -1,6 +1,8 @@
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
+using Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SlashCommands;
 
@@ -10,6 +12,7 @@ public class Up : ApplicationCommandModule<ApplicationCommandContext>
     public async Task Execute()
     {
         var self = await Context.Client.Rest.GetUserAsync(Context.Client.Id);
+        var vegaInstance = Core.ServiceRegistry.ServiceProvider!.GetService<Vega>()!;
 
         var embed = new EmbedProperties
         {
@@ -22,8 +25,7 @@ public class Up : ApplicationCommandModule<ApplicationCommandContext>
                 new EmbedFieldProperties
                 {
                     Name = "Uptime",
-                    //Value = (DateTime.UtcNow - vega.StartTime).ToString(@"dd\.hh\:mm\:ss")
-                    Value = "WIP"
+                    Value = (DateTime.UtcNow - vegaInstance.StartTime).ToString(@"dd\.hh\:mm\:ss")
                 },
                 new EmbedFieldProperties
                 {
@@ -31,9 +33,7 @@ public class Up : ApplicationCommandModule<ApplicationCommandContext>
                     Value = string.Format
                             (
                                 "{0} UTC",
-                                "WIP"
-                                //vega.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                                //vega.StartTime
+                                vegaInstance.StartTime.ToString("yyyy-MM-dd HH:mm:ss")
                             )
                 }
             },

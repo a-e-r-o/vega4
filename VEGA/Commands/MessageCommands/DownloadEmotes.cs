@@ -5,20 +5,17 @@ using Models;
 
 namespace MessageCommands;
 
-public class Emotes : ApplicationCommandModule<ApplicationCommandContext>
+public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext>
 {
     [MessageCommand("DownloadEmotes")]
-    public async Task Timestamp(RestMessage message) {
+    public async Task Execute(RestMessage message) {
 
-        //"<:huh:1293177600025301062> <:77487merushyblush:1384904793872531506>"
-        var msgRef = message.MessageSnapshots?[0];
-        List<CustomEmote> emotes = new();
+        var msgRef = message.MessageSnapshots.FirstOrDefault() ?? null;
         string response;
+        string input = msgRef?.Message.Content ?? message.Content;
         
-        if (msgRef is not null)
-        {
-            emotes = ParseEmotes(msgRef.Message.Content);
-        }
+        List<CustomEmote> emotes = ParseEmotes(input);
+
         if (emotes.Count > 0)
         {
             response = "Found the following emotes in the message:\n";
@@ -69,33 +66,3 @@ public class Emotes : ApplicationCommandModule<ApplicationCommandContext>
         
     }
 }
-
-
-/*
-matches?.forEach(x => {
-    x = x.replace(/[<,>]/g, '')
-    const parts = x.split(':').filter(x => x != '')
-
-    const anim = parts.length > 2
-    const id = parts.pop()
-    const name = parts.pop()
-    const filename = `${name}.${anim?'gif':'png'}`
-    const url = `https://cdn.discordapp.com/emojis/${id}.${anim?'gif':'png'}?size=512&quality=lossless`
-
-    //https://cdn.discordapp.com/emojis/1384904793872531506.png?size=512&quality=lossless
-
-    // If parsed data is malfrmed, abort
-    if (!id || !name || !url)
-        return
-    // If emote is a duplicate, abort
-    if (emotes.find(y => y.id == id))
-        return
-
-    emotes.push({
-        animated: anim,
-        id: id,
-        name: name,
-        url: url,
-        filename: filename
-    })
-*/
