@@ -2,6 +2,8 @@ using System.Threading.Tasks;
 using NetCord.Rest;
 using NetCord.Gateway;
 
+namespace Handlers;
+
 public static class MiscHandlers
 {
     public static async Task Connected(GatewayClient client)

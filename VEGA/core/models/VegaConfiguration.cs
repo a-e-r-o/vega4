@@ -1,8 +1,8 @@
 namespace Core.Models;
 
-public class VegaConfiguration
+public class Configuration
 {
-    public VegaConfiguration(string botToken)
+    public Configuration(string botToken)
     {
         BotToken = botToken;
     }

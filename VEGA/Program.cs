@@ -2,28 +2,34 @@
 using Microsoft.Extensions.DependencyInjection;
 using Core.Models;
 using Core;
+using Handlers;
 
 // Configuration
-IConfiguration configuration = new ConfigurationBuilder()
+IConfiguration appSettings = new ConfigurationBuilder()
                                     .AddJsonFile("appsettings.json")
                                     .Build();
 
-VegaConfiguration config = new VegaConfiguration(configuration.GetValue<string>("botToken") ?? throw new Exception("token not found"));
+Configuration configuration = new Configuration(appSettings.GetValue<string>("botToken") ?? throw new Exception("token not found"));
 
 // Build DI container
 var serviceProvider = new ServiceCollection()
-                            .AddSingleton(config)
-                            .AddSingleton(sp => new Vega(sp.GetRequiredService<VegaConfiguration>()))
-                            .AddScoped(sp => new AppDbContext(sp.GetRequiredService<VegaConfiguration>()))
+                            .AddSingleton(configuration)
+                            .AddSingleton(sp => new MessageCreateHandler(
+                                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MessageCreateHandler>>()
+                            ))
+                            .AddSingleton(sp => new Vega())
+                            .AddScoped(sp => new AppDbContext(
+                                sp.GetRequiredService<Configuration>()
+                            ))
                             .AddLogging()
                             .BuildServiceProvider();
   
-// Expose provider via ServiceRegistry for parts that are not created via DI
-ServiceRegistry.ServiceProvider = serviceProvider;
-
 // Resolve Vega from DI (ensures ctor dependencies are injected)
 var vega = serviceProvider.GetRequiredService<Vega>();
 
+// Expose provider via ServiceRegistry in Core namespace for parts that are not created via DI
+Core.ServiceRegistry.ServiceProvider = serviceProvider;
+
 // Initi and launch
-await vega.Initialize();
+await vega.Initialize(serviceProvider.GetRequiredService<MessageCreateHandler>(), configuration.BotToken);
 await vega.Launch();

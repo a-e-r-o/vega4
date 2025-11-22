@@ -10,7 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<GuildSettings> GuildSettings { get; set; }
     public DbSet<Trigger> Triggers { get; set; }
 
-    public AppDbContext(VegaConfiguration config)
+    public AppDbContext(Configuration config)
     {
     }
 
