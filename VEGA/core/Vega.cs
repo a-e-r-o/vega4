@@ -52,20 +52,38 @@ public class Vega
             if (interaction is not ApplicationCommandInteraction applicationCommandInteraction)
                 return;
 
-            IExecutionResult result = await ApplicationCommandService.ExecuteAsync
-            (
-                new ApplicationCommandContext(applicationCommandInteraction, client)
-            );
-
-            if (result is not IFailResult failResult)
-                return;
+            string? errorMsg = null;
 
             try
             {
-                await interaction.SendResponseAsync(InteractionCallback.Message(failResult.Message));
+                IExecutionResult result = await ApplicationCommandService.ExecuteAsync(
+                    new ApplicationCommandContext(applicationCommandInteraction, client)
+                );
             }
-            catch
+            // Business exception = expected error that can be shown to user
+            catch (BusinessException bex)
             {
+                errorMsg = bex.Message;
+            }
+            // Other exceptions = unexpected error that should be logged
+            catch (Exception ex)
+            {
+                errorMsg = "Interaction failed : an internal server error occurred.";
+            }
+
+            // If nay exception occurred, send failure response
+            if (errorMsg != null)
+            {
+                try
+                {
+                    await interaction.SendResponseAsync(
+                        InteractionCallback.Message(errorMsg)
+                    );
+                }
+                catch
+                {
+                    Console.WriteLine("Failed to send interaction failure response.");  
+                }
             }
         };
     }

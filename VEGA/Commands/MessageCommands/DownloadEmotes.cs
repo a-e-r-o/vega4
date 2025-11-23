@@ -2,6 +2,9 @@ using System.Text.RegularExpressions;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Models;
+using System.IO.Compression;
+using NetCord;
+using NetCord.Services;
 
 namespace MessageCommands;
 
@@ -11,26 +14,49 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
     public async Task Execute(RestMessage message) {
 
         var msgRef = message.MessageSnapshots.FirstOrDefault() ?? null;
-        string response;
         string input = msgRef?.Message.Content ?? message.Content;
         
         List<CustomEmote> emotes = ParseEmotes(input);
 
-        if (emotes.Count > 0)
+        // Business validations
+        if (emotes.Count == 0)
+            throw new BusinessException("No emote found in message.");
+        if (emotes.Count > 20)
+            throw new BusinessException("Too many emotes found in message (max 20).");
+
+        using HttpClient client = new HttpClient();
+        // Download all PNGs concurrently
+        var downloadTasks = new List<Task<byte[]>>();
+        foreach (var url in emotes.Select(e => e.Url))
         {
-            response = "Found the following emotes in the message:\n";
-            foreach (var emote in emotes)
+            downloadTasks.Add(client.GetByteArrayAsync(url));
+        }
+        byte[][] pngBytesArray = await Task.WhenAll(downloadTasks);
+
+        // Create Zip in memory
+        using var memoryStream = new MemoryStream();
+        using (var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+        {
+            for (int i = 0; i < pngBytesArray.Length; i++)
             {
-                response += string.Format("- Name: {0}, URL: {1}\n", emote.Name, emote.Url);
+                var zipEntry = zipArchive.CreateEntry($"emote{i + 1}.png");
+                using var entryStream = zipEntry.Open();
+                await entryStream.WriteAsync(pngBytesArray[i]);
             }
         }
-        else
-        {
-            response = "No emotes found in the message.";
-        }
+        memoryStream.Seek(0, SeekOrigin.Begin);
 
         await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(response)
+            InteractionCallback.Message(
+                new InteractionMessageProperties
+                {
+                    Content = string.Format("Here you are, {0} emote{1} !", emotes.Count, emotes.Count > 1 ? "s" : ""),
+                    Attachments = new[]
+                    {
+                        new AttachmentProperties("emotes.zip", memoryStream)
+                    }
+                }
+            )
         );
     }
 
