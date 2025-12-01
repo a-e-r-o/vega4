@@ -10,34 +10,37 @@ public class AppDbContext : DbContext
     public DbSet<GuildSettings> GuildSettings { get; set; }
     public DbSet<Trigger> Triggers { get; set; }
 
+    private Configuration _config { get; }
+
+
     public AppDbContext(Configuration config)
     {
+        _config = config;
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseNpgsql("Host=localhost;Database=ma_db;Username=mon_user;Password=mon_mdp")
-                        .UseSnakeCaseNamingConvention();
+        optionsBuilder.UseNpgsql(_config.DbConnexionString);
+        optionsBuilder.UseSnakeCaseNamingConvention();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Table names are derived from Entity name, using Snake Case convention
         modelBuilder.Entity<GuildSettings>()
-                    .ToTable("guild_settings")  // Nom de table exact
-                    .HasKey(g => g.GuildId);  // PK explicite
+                    .HasKey(g => g.GuildId);    // Primary Key
 
         modelBuilder.Entity<Trigger>()
-                    .ToTable("triggers")  // Nom de table exact
-                    .HasKey(t => t.TriggerId);  // PK
+                    .HasKey(t => t.TriggerId);  // Primary Key
 
         modelBuilder.Entity<Trigger>()
                     .Property(t => t.TriggerId)
-                        .HasDefaultValueSql("gen_random_uuid()");  // Auto-génère UUID en PG si pas fourni
+                        .HasDefaultValueSql("gen_random_uuid()");  // Default value : new Guid 
 
         modelBuilder.Entity<GuildSettings>()
-                    .HasMany(g => g.Triggers)  // Collection
-                    .WithOne()                 // Pas de navigation inverse
-                    .HasForeignKey(t => t.GuildId)  // FK
-                    .OnDelete(DeleteBehavior.Cascade);  // Cascade si voulu
+                    .HasMany(g => g.Triggers)           // Trigger list
+                    .WithOne()                          // Navigation property not needed
+                    .HasForeignKey(t => t.GuildId)      // Foreign Key
+                    .OnDelete(DeleteBehavior.Cascade);  // On delete cascade
     }
 }

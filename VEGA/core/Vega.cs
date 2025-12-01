@@ -3,6 +3,7 @@ using NetCord.Gateway;
 using NetCord.Rest;
 using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
+using NetCord.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +11,12 @@ using System.Threading.Tasks;
 using Core.Models;
 using Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Core;
 
 public class Vega
 {
-    public DateTime StartTime { get; } = DateTime.UtcNow;
     // Client is created during Initialize; use null-forgiving here and assign in configureGatewayClient
     private ShardedGatewayClient ShardedClient { get; set; } = null!;
     // Initialize the command service so the property is non-null after construction
@@ -28,9 +29,14 @@ public class Vega
     public async Task Initialize(MessageCreateHandler msgCreateHandler, string botToken)
     {
         // Use the fluent GatewayClientBuilder to create and configure the client and command service
-        ShardedClient = Configurators.ShardedGatewayClientBuilder
-                                        .Create(botToken)
-                                        .Build();
+        ShardedClient = new ShardedGatewayClient
+        (
+            new BotToken(botToken), new ShardedGatewayClientConfiguration
+            {
+                IntentsFactory = (shard) => GatewayIntents.GuildMessages | GatewayIntents.DirectMessages | GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildUsers,
+                LoggerFactory = ShardedConsoleLogger.GetFactory()
+            }
+        );
 
         // Configure all registered handlers
         // Register all commands to Discord

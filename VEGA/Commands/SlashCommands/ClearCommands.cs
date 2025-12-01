@@ -17,7 +17,7 @@ public class ClearCommands :  ApplicationCommandModule<ApplicationCommandContext
         )] bool global = false
     )
     {
-        var vegaInstance = Core.ServiceRegistry.ServiceProvider!.GetService<Vega>()!;
+        var vegaInstance = GlobalRegistry.MainServiceProvider!.GetService<Vega>()!;
 
         if (global)
         {
