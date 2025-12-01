@@ -6,6 +6,12 @@ namespace Core
     public static class GlobalRegistry
     {
         public static DateTime StartTime { get; } = DateTime.UtcNow;
-        public static IServiceProvider? MainServiceProvider { get; set; }
+
+        
+        private static IServiceProvider? _mainServiceProvider;
+        public static IServiceProvider MainServiceProvider =>
+            _mainServiceProvider ?? throw new InvalidOperationException("MainServiceProvider not set. Set it in Program.cs before using.");
+
+        public static void SetMainServiceProvider(IServiceProvider provider) => _mainServiceProvider = provider;
     }
 }

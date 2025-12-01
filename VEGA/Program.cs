@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Core.Models;
 using Core;
 using Handlers;
+using Microsoft.Extensions.Caching.Memory;
 
 // Configuration
 IConfiguration appSettings = new ConfigurationBuilder()
@@ -23,22 +24,22 @@ var serviceProvider = new ServiceCollection()
                             .AddSingleton(sp => new MessageCreateHandler(
                                 sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MessageCreateHandler>>()
                             ))
+                            .AddSingleton<IMemoryCache, MemoryCache>()
                             // Vega instance
-                            .AddSingleton(sp => new Vega())
+                            .AddSingleton<Vega>()
                             // AppDbContext with Configuration
-                            .AddScoped(sp => new AppDbContext(
-                                sp.GetRequiredService<Configuration>()
-                            ))
+                            .AddScoped<AppDbContext>()
+                            .AddScoped<GuildSettingsService>()
                             // Logging
                             .AddLogging()
                             .BuildServiceProvider();
   
-// Resolve Vega from DI (ensures ctor dependencies are injected)
-var vega = serviceProvider.GetRequiredService<Vega>();
-
 // Expose provider via ServiceRegistry in Core namespace for parts that are not created via DI
-Core.GlobalRegistry.MainServiceProvider = serviceProvider;
+GlobalRegistry.SetMainServiceProvider(serviceProvider);
 
+
+// Resolve Vega instance from DI
+var vega = serviceProvider.GetRequiredService<Vega>();
 // Init and launch
 await vega.Initialize(serviceProvider.GetRequiredService<MessageCreateHandler>(), configuration.BotToken);
 await vega.Launch();

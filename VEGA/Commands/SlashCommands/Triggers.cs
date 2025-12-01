@@ -1,6 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
+using static Core.GlobalRegistry;
 
 namespace SlashCommands;
 
@@ -11,6 +13,9 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
     [SubSlashCommand("list", "List triggers on this server")]
     public async Task List()
     {
+        var service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
+        var settings = service.GetByIdAsync(Context.Interaction.Guild!.Id);
+
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.Message("The list of triggers")
         );
@@ -23,6 +28,8 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(Name = "regexoptions", Description = "Regex matching options")] string regexOptions = "gmi"
     )
     {
+        var service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
+
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.Message($"Added trigger [ID] with pattern `/{regex}/{regexOptions}`")
         );
