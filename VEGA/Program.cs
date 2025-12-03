@@ -21,9 +21,7 @@ var serviceProvider = new ServiceCollection()
                             // Instance de la Configuration
                             .AddSingleton(configuration)
                             // CreateMessage Handler
-                            .AddSingleton(sp => new MessageCreateHandler(
-                                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MessageCreateHandler>>()
-                            ))
+                            .AddSingleton<MessageCreateHandler>()
                             .AddSingleton<IMemoryCache, MemoryCache>()
                             // Vega instance
                             .AddSingleton<Vega>()

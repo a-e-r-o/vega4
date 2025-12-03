@@ -2,6 +2,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using NetCord.Gateway;
 using NetCord.Rest;
+using static Core.GlobalRegistry;
+using Models.Entities;
+using System.Text.RegularExpressions;
 
 namespace Handlers;
 
@@ -19,16 +22,47 @@ public class MessageCreateHandler
 
     public async Task MessageCreate(GatewayClient client, Message message)
     {
-        Console.WriteLine("Message received in {0} from {1}", message.ChannelId, message.Author.Username);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-        // interaction rapide avec le cache singleton
-        //var cached = _cache.GetSomething(message.Author.Id);
+        // Check if message channel exists and is in guild ans is not from a bot
+        if (message.GuildId.HasValue && message.Channel is not null && !message.Author.IsBot)
+        {
+            GuildSettingsService service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
+            GuildSettings settings = await service.GetByIdAsync(message.GuildId.Value);
 
-        // pour la BDD (scoped) : créer un scope par invocation
-        //using var scope = _scopeFactory.CreateScope();
-        //var dbService = _serviceProvider.GetRequiredService<IMyScopedDbService>();
+            // No triggers set for this guild
+            if (settings.Triggers.Count != 0)
+            {
+                string res = checkTriggers(message, settings);
 
-        // utiliser dbService de façon asynchrone
-        //await dbService.HandleMessageAsync(message, cached);
+                if (res != string.Empty)
+                    await message.Channel.SendMessageAsync(res);
+            }
+        }
+
+        stopwatch.Stop();
+        Console.WriteLine("MessageCreate handled in {0} ms", stopwatch.ElapsedMilliseconds);
+    }
+
+    private string checkTriggers(Message msg, GuildSettings settings){
+        Trigger foundPattern;
+
+        // Find if the message matches any trigger pattern
+        for (var i = 0; i < settings.Triggers.Count; i++) {
+            var pattern = settings.Triggers[i];
+            try {
+                if (Regex.IsMatch(msg.Content, pattern.Pattern, (RegexOptions)pattern.RegexOptions))
+                {
+                    foundPattern = pattern;
+                    return foundPattern.Response;
+                }
+            } 
+            catch (Exception ex)
+            {
+                
+            }
+        }
+
+        return string.Empty;
     }
 }

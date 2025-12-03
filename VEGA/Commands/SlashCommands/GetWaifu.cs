@@ -13,11 +13,10 @@ public class WaifuCategoryChoicesProvider : IChoicesProvider<ApplicationCommandC
     {
         var list = new List<ApplicationCommandOptionChoiceProperties>
         {
-            new("waifu", "waifu"),
-            new("megumin", "megumin"),
-            new("neko", "neko"),
-            new("blush", "blush"),
-            new("shinobu", "shinobu")
+            new("Any", "waifu"),
+            new("Megumin", "megumin"),
+            new("Neko", "neko"),
+            new("Shinobu", "shinobu")
         }.AsEnumerable();
         
         return ValueTask.FromResult(list);
@@ -38,8 +37,6 @@ public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
 {
     private const string waifuApiSingleBaseUri = "https://api.waifu.pics/{0}/{1}";
     private const string waifuApiManyBaseUri = "https://api.waifu.pics/many/{0}/{1}";
-
-
 
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
     [RequireBotPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
@@ -92,14 +89,6 @@ public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
 
                 results.Add(item!.Url!);
             }
-        }
-        catch (HttpRequestException ex)
-        {
-            Console.WriteLine($"Erreur HTTP: {ex.Message}");
-        }
-        catch (JsonException ex)
-        {
-            Console.WriteLine($"Erreur JSON: {ex.Message}");
         }
         catch (Exception ex)
         {
