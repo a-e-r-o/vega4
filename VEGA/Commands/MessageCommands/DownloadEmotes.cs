@@ -10,6 +10,8 @@ namespace MessageCommands;
 
 public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext>
 {
+    [RequireUserPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
+    [RequireBotPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
     [MessageCommand("DownloadEmotes")]
     public async Task Execute(RestMessage message) {
 
