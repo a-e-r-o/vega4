@@ -24,7 +24,7 @@ public class MessageCreateHandler
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-        // Check if message channel exists and is in guild ans is not from a bot
+        // Check if message channel exists and is in guild and is not from a bot
         if (message.GuildId.HasValue && message.Channel is not null && !message.Author.IsBot)
         {
             GuildSettingsService service = MainServiceProvider.GetRequiredService<GuildSettingsService>();

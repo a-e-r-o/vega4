@@ -64,7 +64,12 @@ public class Vega
             {
                 IExecutionResult result = await ApplicationCommandService.ExecuteAsync(
                     new ApplicationCommandContext(applicationCommandInteraction, client)
-                );
+                ).ConfigureAwait(false);
+
+                if (result is ExecutionExceptionResult executionExceptionResult)
+                {
+                    throw executionExceptionResult.Exception; // Rethrow the wrapped exception
+                }
             }
             // Business exception = expected error that can be shown to user
             catch (BusinessException bex)

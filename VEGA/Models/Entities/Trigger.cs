@@ -11,19 +11,40 @@ public class Trigger
     [Required]
     public ulong GuildId { get; set; } = 0; // FK -> GuildSettings
 
+    /// <summary>
+    /// Regex
+    /// </summary>
     [Required, MaxLength(255)]
     public string Pattern { get; set; } = string.Empty;
 
     [Required, MaxLength(5000)]
     public string Response { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Regex options as sum of the regex options flags in dotnet 
+    /// </summary>
     public int RegexOptions { get; set; } = 0;
 
+    /// <summary>
+    /// Reply with ping to message that triggered the response
+    /// </summary>
     public bool PingOnReply { get; set; } = false;
+
+    /// <summary>
+    /// UTC
+    /// </summary>
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     private Trigger(){}
 
-    public Trigger(ulong guildId, string pattern, string response, int regexOptions, bool pingOnReply = false, Guid? triggerId = null)
+    public Trigger(
+        ulong guildId, string pattern,
+        string response,
+        int regexOptions,
+        bool pingOnReply = false,
+        Guid? triggerId = null,
+        DateTimeOffset? createdAt = null
+    )
     {
         GuildId = guildId;
         Pattern = pattern;
@@ -31,6 +52,7 @@ public class Trigger
         RegexOptions = regexOptions;
         PingOnReply = pingOnReply;
         TriggerId = triggerId ?? Guid.NewGuid();
+        CreatedAt = createdAt ?? DateTimeOffset.UtcNow;
     }
 
 }

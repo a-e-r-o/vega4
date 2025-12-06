@@ -103,4 +103,24 @@ public class GuildSettingsService
 
         return settings;
     }
+
+
+    /// <summary>
+    /// Delete a trigger on the targeted GuildSettings
+    /// </summary>
+    /// <param name="guildId"></param>
+    /// <param name="trigger"></param>
+    /// <returns></returns>
+    public async Task<bool> DeleteTrigger(ulong guildId, int triggerIndex)
+    {
+        GuildSettings settings = await GetByIdAsync(guildId);
+        
+        settings.Triggers.OrderByDescending(x => x.CreatedAt)
+                            .ToList()
+                            .RemoveAt(triggerIndex);
+
+        GuildSettings updatedSettings = await SaveOrUpdateAsync(guildId, settings);
+
+        return true;
+    }
 }

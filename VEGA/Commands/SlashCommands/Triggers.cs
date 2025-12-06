@@ -68,11 +68,18 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.ManageMessages)]
     public async Task Delete(
-        [SlashCommandParameter(Name = "id", Description = "ID of the trigger to delete")] int triggerId
+        [SlashCommandParameter(
+            Name = "id",
+            Description = "ID of the trigger to delete"
+        )] int triggerIndex
     )
     {
+        GuildSettingsService service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
+        ulong guildId = Context.Interaction.GuildId ?? throw new BusinessException("Unable to retrieve guild");
+        bool deleted = await service.DeleteTrigger(guildId, triggerIndex);
+
         await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message($"removed trigger {triggerId}")
+            InteractionCallback.Message($"Removed trigger successfuly")
         );
     }
 
