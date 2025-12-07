@@ -33,7 +33,7 @@ public class Trigger
     /// <summary>
     /// UTC
     /// </summary>
-    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     private Trigger(){}
 
@@ -43,7 +43,7 @@ public class Trigger
         int regexOptions,
         bool pingOnReply = false,
         Guid? triggerId = null,
-        DateTimeOffset? createdAt = null
+        DateTime? createdAt = null
     )
     {
         GuildId = guildId;
@@ -52,7 +52,7 @@ public class Trigger
         RegexOptions = regexOptions;
         PingOnReply = pingOnReply;
         TriggerId = triggerId ?? Guid.NewGuid();
-        CreatedAt = createdAt ?? DateTimeOffset.UtcNow;
+        CreatedAt = createdAt ?? DateTime.UtcNow;
     }
 
 }
