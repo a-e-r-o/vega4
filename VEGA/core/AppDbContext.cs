@@ -1,5 +1,6 @@
 using Core.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Models.Entities;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 
@@ -20,8 +21,9 @@ public class AppDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseNpgsql(_config.DbConnexionString);
-        optionsBuilder.UseSnakeCaseNamingConvention();
+        optionsBuilder.UseSnakeCaseNamingConvention()
+                      .UseNpgsql(_config.DbConnexionString)
+                      .LogTo(Console.WriteLine, LogLevel.Information);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -35,7 +37,8 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Trigger>()
                     .Property(t => t.TriggerId)
-                        .HasDefaultValueSql("gen_random_uuid()");  // Default value : new Guid 
+                    .HasDefaultValueSql("gen_random_uuid()")  // Default value : new Guid 
+                    .ValueGeneratedOnAdd();
 
         modelBuilder.Entity<GuildSettings>()
                     .HasMany(g => g.Triggers)           // Trigger list

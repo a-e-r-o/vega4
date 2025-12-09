@@ -79,7 +79,7 @@ public class Vega
             // Other exceptions = unexpected error that should be logged
             catch (Exception ex)
             {
-                errorMsg = "Interaction failed : an internal server error occurred.";
+                errorMsg = "Interaction failed : something when wrong in the server. Ask the dev to fix their broken code";
             }
 
             // If nay exception occurred, send failure response

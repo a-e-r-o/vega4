@@ -19,16 +19,53 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
         GuildSettingsService service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
         GuildSettings settings = await service.GetByIdAsync(Context.Interaction.Guild!.Id);
 
-        string resMsg = string.Empty;
+        var triggers = settings.Triggers.OrderByDescending(x => x.CreatedAt)
+                                        .ToList();
 
-        foreach(var trigger in settings.Triggers)
+        List<string> resMessages = [];
+
+        if (triggers.Count == 0)
         {
-            resMsg += string.Format("{0}, {1}, {2}, {3}", trigger.Pattern, trigger.Response, trigger.RegexOptions, trigger.PingOnReply);
+            resMessages.Add("There are no triggers on this server");
+        }
+        else
+        {
+            resMessages.Add("## Current triggers on this server");
+
+            for (int i = 0; i < triggers.Count; i++)
+            {
+                string currentTriggerInfo = "";
+                
+                Trigger iTgr = triggers[i];
+                currentTriggerInfo += $"\n{i}.";
+                currentTriggerInfo += $"\n> **Pattern** : `{iTgr.Pattern}`";
+                currentTriggerInfo += $"\n> **Response** : `{iTgr.Response}`";
+                currentTriggerInfo += $"\n> **Regex options** : `{iTgr.RegexOptions}`";
+                currentTriggerInfo += $"\n> **Ping on reply** : {iTgr.PingOnReply}";
+
+                // Discord message char limit is 2000
+                if (resMessages.Last().Length + currentTriggerInfo.Length > 2000)
+                {
+                    // If current message would exeed limit with this trigger, add it to the next message instead
+                    resMessages.Add(string.Empty);
+                } 
+                resMessages[^1] += currentTriggerInfo;
+            }
         }
 
+        // Send initial message response
         await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(resMsg)
+            InteractionCallback.Message(resMessages[0])
         );
+
+        // Send eventual additionnal messages
+        if (resMessages.Count > 1)
+        {
+            for (int i = 1; i < resMessages.Count; i++)
+            {
+                await Context.Channel.SendMessageAsync(resMessages[i]);
+            }
+        }
     }
 
     [SubSlashCommand("add", "Add a new trigger")]

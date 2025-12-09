@@ -1,7 +1,9 @@
+using System.Text.Json;
 using Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Models.Entities;
+using NetCord.JsonModels;
 
 public class GuildSettingsService
 {
@@ -10,6 +12,8 @@ public class GuildSettingsService
 
     // Consts related to cache
     private const int CACHE_LIFETIME_IN_MINUTES = 10;
+    // TODO : move cache lifetime and max triggercount in config
+    private const int MAX_TRIGGER_COUNT_BY_GUID = 10;
     private const string CACHE_PREFIX = "guildSettings_";
 
     // Getter to normalize cache key structure
@@ -40,8 +44,9 @@ public class GuildSettingsService
         // Found in BDD
         if (dbSettings != null)
         {
+            // Add to cache and return cache instance
             _cache.Set(cacheKey, dbSettings, new MemoryCacheEntryOptions()
-                .SetSlidingExpiration(TimeSpan.FromMinutes(CACHE_LIFETIME_IN_MINUTES)));
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(CACHE_LIFETIME_IN_MINUTES)));
 
             return dbSettings;
         }
@@ -70,20 +75,19 @@ public class GuildSettingsService
         GuildSettings? existingSettings = _dbContext.GuildSettings.Find(guildId);
         if (existingSettings is null)
         {
-            // Doesn't exist, so add
             _dbContext.GuildSettings.Add(newSettings);
         }
         else
         {
-            // Exists, so update
             _dbContext.Entry(existingSettings).CurrentValues.SetValues(newSettings);
+            // Handle triggers separately if needed
         }
-
+        
+        // If oject does exist its changes are already being tracked
         await _dbContext.SaveChangesAsync();
 
         // Update cache
-        var key = GetCacheKey(guildId);
-        _cache.Set(key, newSettings);
+        _cache.Set(GetCacheKey(guildId), newSettings);
 
         return newSettings;
     }
@@ -98,10 +102,14 @@ public class GuildSettingsService
     public async Task<GuildSettings> AddTrigger(ulong guildId, Trigger trigger)
     {
         GuildSettings settings = await GetByIdAsync(guildId);
-        settings.Triggers.Add(trigger);
-        GuildSettings updatedSettings = await SaveOrUpdateAsync(guildId, settings);
 
-        return settings;
+        if (settings.Triggers.Count >= MAX_TRIGGER_COUNT_BY_GUID)
+            throw new BusinessException($"You can't create more than {MAX_TRIGGER_COUNT_BY_GUID} trigger for each server");
+
+        settings.Triggers.Add(trigger);
+
+        GuildSettings updatedSettings = await SaveOrUpdateAsync(guildId, settings);
+        return updatedSettings;
     }
 
 
@@ -114,10 +122,16 @@ public class GuildSettingsService
     public async Task<bool> DeleteTrigger(ulong guildId, int triggerIndex)
     {
         GuildSettings settings = await GetByIdAsync(guildId);
+
+        if (settings.Triggers.Count == 0)
+            throw new BusinessException($"There are no triggers on this server");
         
-        settings.Triggers.OrderByDescending(x => x.CreatedAt)
-                            .ToList()
-                            .RemoveAt(triggerIndex);
+        var triggerId = settings.Triggers.OrderByDescending(x => x.CreatedAt)
+                                            .ToList()
+                                            .ElementAt(triggerIndex)
+                                            .TriggerId;
+        
+        settings.Triggers.RemoveAll(x => x.TriggerId == triggerId);
 
         GuildSettings updatedSettings = await SaveOrUpdateAsync(guildId, settings);
 
