@@ -18,29 +18,38 @@ public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
             MaxValue = 100,
             MinValue = 1
         )]
-        int count
+        int msgCount
     )
     {
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(MessageFlags.Ephemeral)
         );
 
-        IAsyncEnumerable<RestMessage> messages = Context.Channel.GetMessagesAsync();
-        List<ulong> ids = new();
+        IAsyncEnumerable<RestMessage> messages = Context.Channel.GetMessagesAsync(
+            new PaginationProperties<ulong> 
+            {
+                BatchSize = 100
+            }
+        );
+
+        List<ulong> msgIds = new();
 
         await foreach (var message in messages)
         {
-            ids.Add(message.Id);
+            msgIds.Add(message.Id);
+            
+            if (msgIds.Count >= msgCount)
+            {
+                break;
+            }
         }
 
-        Console.WriteLine($"Deleting {ids.Count} messages in channel {Context.Channel.Id}");
-
-        //await Context.Client.Rest.DeleteMessagesAsync(Context.Channel.Id, ids.ToArray());
+        await Context.Channel.DeleteMessagesAsync(msgIds);
 
         await Context.Interaction.SendFollowupMessageAsync(
             new InteractionMessageProperties
             {
-                Content = $"Cleared {ids.Count} messages!",
+                Content = $"Here you go, I deleted {msgIds.Count} messages !",
                 Flags = MessageFlags.Ephemeral
             }
         );

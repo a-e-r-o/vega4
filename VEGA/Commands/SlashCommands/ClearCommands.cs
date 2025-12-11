@@ -6,6 +6,8 @@ using NetCord.Services.ApplicationCommands;
 
 namespace SlashCommands;
 
+#if DEBUG
+
 public class ClearCommands :  ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("clearcommands", "Erase all registered commands for this bot")]
@@ -35,3 +37,5 @@ public class ClearCommands :  ApplicationCommandModule<ApplicationCommandContext
         );
     }
 }
+
+#endif
