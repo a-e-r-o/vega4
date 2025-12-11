@@ -1,3 +1,6 @@
 VEGA/bin/*
 VEGA/obj/*
+VEGA.Tests/bin/*
+VEGA.Tests/obj/*
 .vscode/*
+appsettings.json

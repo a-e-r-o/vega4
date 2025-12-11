@@ -8,8 +8,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NetCord" Version="1.0.0-alpha.444" />
-    <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.444" />
+    <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.10" />
+    <PackageReference Include="NetCord" Version="1.0.0-alpha.446" />
+    <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.446" />
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <PackageReference Include="NetCord.Hosting.AspNetCore" Version="1.0.0-alpha.446" />
+    <PackageReference Include="NetCord.Hosting.Services" Version="1.0.0-alpha.446" />
+    <PackageReference Include="NetCord.Services" Version="1.0.0-alpha.446" />
+    <PackageReference Include="NetCordAddons.Services" Version="1.1.9" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
   </ItemGroup>
 
 </Project>
