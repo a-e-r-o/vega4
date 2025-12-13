@@ -60,6 +60,10 @@ public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
 
         using HttpClient client = new HttpClient();
 
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage()
+        );
+
         try
         {
             if (multiple)
@@ -95,10 +99,8 @@ public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
             Console.WriteLine($"Erreur inattendue: {ex.Message}");
         }
 
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(
-                string.Join("\n", results)
-            )
+        await Context.Interaction.SendFollowupMessageAsync(
+            string.Join("\n", results)
         );
     }
 }

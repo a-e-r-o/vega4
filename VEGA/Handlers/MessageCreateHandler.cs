@@ -35,14 +35,19 @@ public class MessageCreateHandler
             {
                 Trigger? trigger = checkTriggers(message, settings);
 
-                await message.Channel.SendMessageAsync(trigger.Response);
-
                 if (trigger != null)
                 {
-                    if (trigger.PingOnReply)
-                        await message.Channel.SendMessageAsync(trigger.Response);
-                    else
-                        await message.ReplyAsync(trigger.Response);
+                    try
+                    {
+                        if (trigger.PingOnReply)
+                            await message.Channel.SendMessageAsync(trigger.Response);
+                        else
+                            await message.ReplyAsync(trigger.Response);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Cannot send trigger response :", ex.Message);
+                    }
                 }
             }
         }

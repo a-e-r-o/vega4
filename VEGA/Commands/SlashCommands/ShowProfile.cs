@@ -12,8 +12,6 @@ public class ShowProfile :  ApplicationCommandModule<ApplicationCommandContext>
 
     [SlashCommand("showprofile", "Show avatar and banner of a user in high res")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
-    [RequireUserPermissions<ApplicationCommandContext>(Permissions.ManageMessages)]
-    [RequireBotPermissions<ApplicationCommandContext>(Permissions.ManageMessages)]
     public async Task Execute(
         [SlashCommandParameter(
             Name = "userid",

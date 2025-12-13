@@ -22,8 +22,7 @@ public class AppDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseSnakeCaseNamingConvention()
-                      .UseNpgsql(_config.DbConnexionString)
-                      .LogTo(Console.WriteLine, LogLevel.Information);
+                      .UseNpgsql(_config.DbConnexionString);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

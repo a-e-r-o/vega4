@@ -59,6 +59,7 @@ public class Vega
                 return;
 
             string? errorMsg = null;
+            bool isBusinessEx = false;
 
             try
             {
@@ -75,11 +76,12 @@ public class Vega
             catch (BusinessException bex)
             {
                 errorMsg = bex.Message;
+                isBusinessEx = true;
             }
             // Other exceptions = unexpected error that should be logged
             catch (Exception ex)
             {
-                errorMsg = "Interaction failed : something when wrong in the server. Ask the dev to fix their broken code";
+                errorMsg = "Something went wrong in the server. Ask the dev to fix their broken code";
             }
 
             // If nay exception occurred, send failure response
@@ -87,13 +89,30 @@ public class Vega
             {
                 try
                 {
-                    await interaction.SendResponseAsync(
-                        InteractionCallback.Message(errorMsg)
-                    );
+                    // Reply as interaction response with ephemal flag (user-only)
+                    if (isBusinessEx)
+                    {
+                        await interaction.SendResponseAsync(
+                            InteractionCallback.Message(
+                                new InteractionMessageProperties
+                                {
+                                    Content = errorMsg,
+                                    Flags = MessageFlags.Ephemeral
+                                }
+                            )
+                        );
+                    }
+                    // Reply as a simple message in channel
+                    else
+                    {   
+                        await interaction.Channel.SendMessageAsync(
+                            $"Interaction failed : {errorMsg}"
+                        );
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Failed to send interaction failure response.");  
+                    Console.WriteLine("Failed to send interaction failure response.", ex.Message);
                 }
             }
         };
