@@ -113,7 +113,7 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
     )
     {
         GuildSettingsService service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
-        ulong guildId = Context.Interaction.GuildId ?? throw new BusinessException("Unable to retrieve guild");
+        ulong guildId = Context.Interaction.GuildId ?? throw new SlashCommandBusinessException("Unable to retrieve guild");
         bool deleted = await service.DeleteTrigger(guildId, triggerIndex);
 
         if (!deleted)
