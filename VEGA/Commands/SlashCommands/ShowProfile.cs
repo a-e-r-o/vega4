@@ -84,13 +84,11 @@ public class ShowProfile :  ApplicationCommandModule<ApplicationCommandContext>
             if(avatarUrl is not null)
                 embed.Thumbnail = new EmbedThumbnailProperties($"{avatarUrl}{SIZE_URL_PARAM}");
 
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message(
-                    new InteractionMessageProperties
-                    {
-                        Embeds = new[] { embed }
-                    }
-                )
+            await Context.Interaction.SendFollowupMessageAsync(
+                new InteractionMessageProperties
+                {
+                    Embeds = new[] { embed }
+                }
             );
         }
         catch (SlashCommandException ex)
