@@ -12,6 +12,7 @@ using Core.Models;
 using Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
+using Exceptions;
 
 namespace Core;
 
@@ -59,8 +60,8 @@ public class Vega
                 return;
 
             string? errorMsg = null;
-            bool isBusinessEx = false;
-
+            bool deferred = false;
+            
             try
             {
                 IExecutionResult result = await ApplicationCommandService.ExecuteAsync(
@@ -72,16 +73,22 @@ public class Vega
                     throw executionExceptionResult.Exception; // Rethrow the wrapped exception
                 }
             }
-            // Business exception = expected error that can be shown to user
-            catch (BusinessException bex)
+            // Expected exception with user-readable message
+            catch (SlashCommandBusinessException bex)
             {
                 errorMsg = bex.Message;
-                isBusinessEx = true;
+                deferred = bex.Deferred;
             }
-            // Other exceptions = unexpected error that should be logged
+            // Unexpected, caught exception
+            catch (SlashCommandGenericException gex)
+            {
+                errorMsg = "Something went wrong while executing command ¯\\\\_(ツ)\\_/¯";
+                deferred = gex.Deferred;
+            }
+            // Worst case scenario : unexcepted uncaught exception
             catch (Exception ex)
             {
-                errorMsg = "Something went wrong in the server. Ask the dev to fix their broken code";
+                errorMsg = "Something went terribly wrong while executing command. Ask the dev to fix their broken code";
             }
 
             // If nay exception occurred, send failure response
@@ -89,25 +96,37 @@ public class Vega
             {
                 try
                 {
-                    // Reply as interaction response with ephemal flag (user-only)
-                    if (isBusinessEx)
+                    // Reply in followup response to the deferred message
+                    if (deferred)
                     {
-                        await interaction.SendResponseAsync(
-                            InteractionCallback.Message(
-                                new InteractionMessageProperties
-                                {
-                                    Content = errorMsg,
-                                    Flags = MessageFlags.Ephemeral
-                                }
-                            )
+                        await interaction.SendFollowupMessageAsync(
+                            errorMsg
                         );
                     }
-                    // Reply as a simple message in channel
+                    // Reply to interaction
                     else
                     {   
-                        await interaction.Channel.SendMessageAsync(
-                            $"Interaction failed : {errorMsg}"
-                        );
+                        // Check if interaction can still be responded to directly
+                        var elapsed = DateTimeOffset.UtcNow - interaction.CreatedAt;
+
+                        if (elapsed.TotalSeconds > 2.5)
+                        {
+                            
+                            Console.WriteLine("Interaction took more than 2 (1 sec margin) sec to process).");
+                        }
+                        // If not, simply send a text message in the channel
+                        else
+                        {
+                            await interaction.SendResponseAsync(
+                                InteractionCallback.Message(
+                                    new InteractionMessageProperties
+                                    {
+                                        Content = errorMsg,
+                                        Flags = MessageFlags.Ephemeral
+                                    }
+                                )
+                            );
+                        }
                     }
                 }
                 catch (Exception ex)

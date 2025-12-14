@@ -1,3 +1,4 @@
+using Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Models.Entities;
 using NetCord;
@@ -90,7 +91,7 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
     )
     {
         GuildSettingsService service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
-        var guildId = Context.Interaction.GuildId ?? throw new BusinessException("Unable to retrieve guild");
+        var guildId = Context.Interaction.GuildId ?? throw new SlashCommandBusinessException("Unable to retrieve guild");
 
         Trigger newTrigger = new Trigger(guildId, regex, response, regexOptions);
         
@@ -114,6 +115,9 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
         GuildSettingsService service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
         ulong guildId = Context.Interaction.GuildId ?? throw new BusinessException("Unable to retrieve guild");
         bool deleted = await service.DeleteTrigger(guildId, triggerIndex);
+
+        if (!deleted)
+            throw new SlashCommandBusinessException("Trigger deletion failed");
 
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.Message($"Removed trigger successfuly")

@@ -5,6 +5,7 @@ using Models;
 using System.IO.Compression;
 using NetCord;
 using NetCord.Services;
+using Exceptions;
 
 namespace MessageCommands;
 
@@ -22,9 +23,9 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
 
         // Business validations
         if (emotes.Count == 0)
-            throw new BusinessException("No emote found in message.");
+            throw new SlashCommandBusinessException("No emote found in message.");
         if (emotes.Count > 20)
-            throw new BusinessException("Too many emotes found in message (max 20).");
+            throw new SlashCommandBusinessException("Too many emotes found in message (max 20).");
 
         using HttpClient client = new HttpClient();
         // Download all PNGs concurrently
