@@ -105,7 +105,7 @@ public class GuildSettingsService
         GuildSettings settings = await GetByIdAsync(guildId);
 
         if (settings.Triggers.Count >= MAX_TRIGGER_COUNT_BY_GUID)
-            throw new SlashCommandBusinessException($"You can't create more than {MAX_TRIGGER_COUNT_BY_GUID} trigger for each server");
+            throw new SlashCommandBusinessException($"You can't create more than {MAX_TRIGGER_COUNT_BY_GUID} triggers for each server");
 
         settings.Triggers.Add(trigger);
 

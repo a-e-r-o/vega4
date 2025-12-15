@@ -68,9 +68,31 @@ public class Vega
                     new ApplicationCommandContext(applicationCommandInteraction, client)
                 ).ConfigureAwait(false);
 
+                // Case of exception thrown : rethrow the exception wrapped in the execution result
                 if (result is ExecutionExceptionResult executionExceptionResult)
+                    throw executionExceptionResult.Exception; 
+
+                // Case of missing perm : wrap MissingPerm object into a custom exception and throw it
+                if (result is MissingPermissionsResult missingPerm)
+                    throw new MissingPermissionException(missingPerm);
+            }
+            catch (MissingPermissionException pex)
+            {   
+                var missingPerms = Enum.GetValues<Permissions>()
+                                       .Cast<Permissions>()
+                                       .Where(flag => pex.MissingPerm.MissingPermissions.HasFlag(flag))
+                                       .Select(flag => flag.ToString());
+
+                string strMissingPerms = string.Join(",", missingPerms);
+
+                switch (pex.MissingPerm.EntityType)
                 {
-                    throw executionExceptionResult.Exception; // Rethrow the wrapped exception
+                    case MissingPermissionsResultEntityType.Bot: 
+                        errorMsg = $"Can't execute command. Bot is missing permissions : {strMissingPerms}";
+                        break;
+                    case MissingPermissionsResultEntityType.User:
+                        errorMsg = $"You can't use this command. Missing permissions : {strMissingPerms}";
+                        break;
                 }
             }
             // Expected exception with user-readable message
