@@ -16,13 +16,14 @@ public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
 {
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
     [RequireBotPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
-    [SlashCommand("waifu", "Send a waifu image")]
+    [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
+    [SlashCommand("waifu", "Sends waifu images")]
     public async Task Execute(
         [SlashCommandParameter(
             Name = "type", 
             Description = "Type of waifu to send",
             ChoicesProviderType = typeof(SfwWaifuCategoryChoicesProvider)
-        )] string type = "waifu",
+        )] int type = 0,
         [SlashCommandParameter(
             Name = "count", Description = "Number of waifu to send", MinValue = 1, MaxValue = 5
         )] int count = 1
@@ -37,6 +38,7 @@ public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
         try
         {
             List<string> imageUrls = await waifuApiService.FetchImagesAsync(count, type);
+            
             string response = string.Join("\n",imageUrls);
 
             await Context.Interaction.SendFollowupMessageAsync(response);
@@ -50,7 +52,7 @@ public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
         // API error : business exception with explicit message
         catch (HttpRequestException httpEx)
         {
-            throw new SlashCommandBusinessException($"The call to the waifu API failed. Code : {((int?)httpEx.StatusCode)}", true);
+            throw new SlashCommandBusinessException($"The call to the waifu API failed. Code : {httpEx.StatusCode}", true);
         }
         // Other : classic exception
         catch (Exception ex)

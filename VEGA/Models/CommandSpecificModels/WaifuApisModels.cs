@@ -1,43 +1,47 @@
 using System;
 using System.Text.Json.Serialization;
 using Microsoft.VisualBasic;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
 namespace Models.CommandSpecificModels;
 
+public class WaifuCategoryValue
+{
+    public int Id {get; set;}
+    public string Value {get; set;}
+
+
+    /// <summary>
+    /// Use WaifuCategoryChoicesProvider for reference on categories IDs.
+    /// Value is the string value expected as argument by the API
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="value"></param>
+    public WaifuCategoryValue(int id, string value)
+    {
+        Id = id;
+        Value = value;
+    }
+}
+
 public static class WaifuApiTypes
 {
-    public static List<IApiDefinition> ApiDefinitions => [WaifuPics, WaifuIm];
+    public static List<IApiDefinition> ApiDefinitions => [WaifuIm, WaifuPics, Nekosia];
 
     public static readonly IApiDefinition WaifuPics = new WaifuPicsApiReference();
     public static readonly IApiDefinition WaifuIm = new WaifuImApiReference();
-
-    public static IEnumerable<ApplicationCommandOptionChoiceProperties> GetAllSfwCategoriesDistinct(){
-        return ApiDefinitions.SelectMany(x => x.SfwCategories)
-                             .GroupBy(x => x.Name)
-                             .Select(g => g.First());
-    }
+    public static readonly IApiDefinition Nekosia = new NekosiaApiReference();
 
     /// <summary>
-    /// Discord interaction context only gives us the value, not the name of the slash command argument option selected.
-    /// Some categories are shared by name between API definitions but with different values.
-    /// This function returns the API definitions containing the option selected.
-    /// Exemple : category named "Any" = "any" or "waifu". Interaction context "category" argument : "waifu". 
-    /// We find the category name for this value, which is "Any", and then return all ApiDefinitions 
-    /// containing a category named "Any"
+    /// Returns API definitions containing the required category
     /// </summary>
-    /// <param name="category"></param>
+    /// <param name="categoryId"></param>
     /// <returns></returns>
-    public static List<IApiDefinition> GetApisWithCategoryBySfwCategoryValue(string category)
+    public static IEnumerable<IApiDefinition> GetApisContainingCategory(int categoryId)
     {
-        string categoryName = ApiDefinitions.SelectMany(x => x.SfwCategories)
-                                            .First(x => x.StringValue == category)
-                                            .Name;
-
-        return ApiDefinitions.Where(
-            x => x.SfwCategories.Exists(y => y.Name == categoryName)
-        ).ToList();
+        return ApiDefinitions.Where(x => x.Categories.Exists(y => y.Id == categoryId));
     }
 }
 
@@ -48,7 +52,43 @@ public interface IApiDefinition
 
     public string GetBaseUri(bool multiple = false);
     
-    public List<ApplicationCommandOptionChoiceProperties> SfwCategories { get; }
+    /// <summary>
+    /// All categories. NSFW Categories begin at ID 1000
+    /// </summary>
+    public List<WaifuCategoryValue> Categories { get; }
+}
+
+/// <summary>
+/// Models and consts for nekosia.cat
+/// Reference : https://nekosia.cat/documentation?page=endpoints
+/// </summary>
+public class NekosiaApiReference : IApiDefinition
+{
+    public class SinglePicResponse{
+        [JsonPropertyName("image")]
+        public required ResponseImageItem Image {get; set;}
+    }
+    public class MultiplePicsApiResponse{
+        [JsonPropertyName("images")]
+        public required IEnumerable<SinglePicResponse> Images {get; set;}
+    }
+
+    public record ResponseImageItem(OriginalImgLinks original);
+    public record OriginalImgLinks(string url, string extension);
+
+
+    public string GetBaseUri(bool multiple = false){
+        return "https://api.nekosia.cat/api/v1/images/{0}";
+    }
+
+    public List<WaifuCategoryValue> Categories => [
+        new(0, "random"),
+        new(1, "catgirl"),
+        new(2, "maid"),
+        new(3, "uniform"),
+        new(4, "foxgirl"),
+        new(7, "vtuber"),
+    ];
 }
 
 /// <summary>
@@ -71,11 +111,11 @@ public class WaifuPicsApiReference : IApiDefinition
         return multiple ? "https://api.waifu.pics/many/{0}/{1}" : "https://api.waifu.pics/{0}/{1}";
     }
 
-    public List<ApplicationCommandOptionChoiceProperties> SfwCategories => [
-        new("Any", "waifu"),
-        new("Megumin", "megumin"),
-        new("Neko", "neko"),
-        new("Shinobu", "shinobu")
+    public List<WaifuCategoryValue> Categories => [
+        new(0, "waifu"),
+        new(102, "megumin"),
+        new(1, "neko"),
+        new(101, "shinobu")
     ];
 }
 
@@ -101,15 +141,14 @@ public class WaifuImApiReference : IApiDefinition
         return "https://api.waifu.im/search";
     }
 
-    public List<ApplicationCommandOptionChoiceProperties> SfwCategories =>
+    public List<WaifuCategoryValue> Categories =>
     [
-        new("Any", "waifu"),  // waifu
-        new("Maid", "maid"),  // maid
-        new("Marin Kitagawa", "marin-kitagawa"),  // marin-kitagawa
-        new("Mori Calliope", "mori-calliope"),  // mori-calliope
-        new("Raiden Shogun", "raiden-shogun"),  // raiden-shogun
-        new("Uniform", "uniform"),  // uniform
-        new("Kamisato Ayaka", "kamisato-ayaka"),  // kamisato-ayaka
+        new(0, "waifu"),
+        new(2, "maid"),
+        new(3, "uniform"),
+        new(5, "oppai"),
+        new(103, "marin-kitagawa"),
+        new(105, "raiden-shogun"),
     ];
 }
 
@@ -117,10 +156,21 @@ public class SfwWaifuCategoryChoicesProvider : IChoicesProvider<ApplicationComma
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(SlashCommandParameter<ApplicationCommandContext> parameter)
     {
-        // Group by name and select first element of grouping, so as to avoid showing 
-        // the same category twice, in case of overlapping categories between different APIs
-        return ValueTask.FromResult(
-            WaifuApiTypes.GetAllSfwCategoriesDistinct()
-        )!;
+        var list = new List<ApplicationCommandOptionChoiceProperties>
+        {
+            new("Any", 0),
+            new("Cat girl", 1),
+            new("Maid", 2),
+            new("Uniform", 3),
+            new("Fox girl", 4),
+            new("Boobs", 5),
+            new("Vtuber", 7),
+            new("Shinobu Oshino", 101),
+            new("Megumin", 102),
+            new("Marin Kitagawa", 103),
+            new("Raiden Shogun", 105),
+        };
+
+        return ValueTask.FromResult(list.AsEnumerable())!;
     }
 }

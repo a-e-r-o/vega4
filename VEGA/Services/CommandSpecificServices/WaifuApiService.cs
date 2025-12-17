@@ -7,109 +7,133 @@ namespace Services.CommandSpecificServices;
 
 public class WaifuApiService
 {
-    public async Task<List<string>> FetchImagesAsync(int count, string category)
+    public async Task<List<string>> FetchImagesAsync(int count, int categoryId)
     {
         IApiDefinition apiToFetch;
-
-        // Get all API in which the type (SFW category) exists
-        var correspondingApis = WaifuApiTypes.GetApisWithCategoryBySfwCategoryValue(category);
+        List<IApiDefinition> matchingApis = WaifuApiTypes.GetApisContainingCategory(categoryId).ToList();
 
         // Decide on which API to call (decided by which one contained the correct category)
-        if (correspondingApis.Count > 1)
+        if (matchingApis.Count > 1)
         {
-            // Choose at random between APIs of the list
-            int apiIndex = Random.Shared.Next(0, correspondingApis.Count);
-            apiToFetch = correspondingApis[apiIndex];
+            // Choose at random between APIs containing category
+            int apiIndex = Random.Shared.Next(0, matchingApis.Count);
+            apiToFetch = matchingApis[apiIndex];
         }
         else 
-            apiToFetch = correspondingApis.First() ?? throw new SlashCommandBusinessException("Invalid category selected");
+            apiToFetch = matchingApis.First() ?? throw new SlashCommandBusinessException("Invalid category selected");
 
-        List<string> res = new();
-
-        switch (apiToFetch)
+        return apiToFetch switch
         {
-            case WaifuPicsApiReference:
-                res = await FetchApiWaifuPicAsync(count, category);
-                break;
-            case WaifuImApiReference:
-                res = await FetchApiWaifuImAsync(count, category);
-                break;
-            default:
-                throw new SlashCommandBusinessException("Inimplemented API");
-        }
-
-        return res;
+            WaifuPicsApiReference => await FetchApiWaifuPicAsync(count, categoryId),
+            WaifuImApiReference   => await FetchApiWaifuImAsync(count, categoryId),
+            NekosiaApiReference   => await FetchApiNekosiaAsync(count, categoryId),
+            _ => throw new SlashCommandBusinessException("Inimplemented API"),
+        };
     }
 
-    private async Task<List<string>> FetchApiWaifuPicAsync(int count, string category)
+    private async Task<List<string>> FetchApiWaifuPicAsync(int count, int categoryId)
     {
+        IApiDefinition apiDefinition = WaifuApiTypes.WaifuPics;
         bool multiple = count > 1;
-        using HttpClient client = new HttpClient();
+        string categoryValue = apiDefinition.Categories.Single(x => x.Id == categoryId).Value;
 
-        string baseUri = WaifuApiTypes.WaifuPics.GetBaseUri(multiple);
-        string url = string.Format(baseUri, "sfw", category);
+        using HttpClient client = new();
+        string baseUri = apiDefinition.GetBaseUri(multiple);
+        string fullUrl = string.Format(baseUri, "sfw", categoryValue);
         
-        List<string> results = new();
+        List<string> imgUrls = new();
 
         if (multiple)
         {
             HttpResponseMessage response = await client.PostAsync(
-                url,
+                fullUrl,
                 // The "exclude" field is required, even when empty
                 new FormUrlEncodedContent(new Dictionary<string, string> {{"exclude", ""}})
             );
             response.EnsureSuccessStatusCode();
 
             string json = await response.Content.ReadAsStringAsync();
-            var items = JsonSerializer.Deserialize<WaifuPicsApiReference.MultiplePicsApiResponse>(json);
-
-            foreach (var picUrl in items!.PicUrls!.Take(count))
-            {
-                results.Add(picUrl);
-            }
+            var res = JsonSerializer.Deserialize<WaifuPicsApiReference.MultiplePicsApiResponse>(json);
+            imgUrls.AddRange(res!.PicUrls.Take(count));
         }
         else
         {
-            HttpResponseMessage response = await client.GetAsync(url);
+            HttpResponseMessage response = await client.GetAsync(fullUrl);
             response.EnsureSuccessStatusCode();
 
             string json = await response.Content.ReadAsStringAsync();
             var item = JsonSerializer.Deserialize<WaifuPicsApiReference.SinglePicResponse>(json);
-
-            results.Add(item!.Url!);
+            imgUrls.Add(item!.Url!);
         }
         
-        return results;
+        return imgUrls;
     }
 
-    private async Task<List<string>> FetchApiWaifuImAsync(int count, string category)
+    private async Task<List<string>> FetchApiWaifuImAsync(int count, int categoryId)
     {
+        IApiDefinition apiDefinition = WaifuApiTypes.WaifuIm;
+        string categoryValue = apiDefinition.Categories.Single(x => x.Id == categoryId).Value;
+        string baseUri = apiDefinition.GetBaseUri();
+        
         using HttpClient client = new HttpClient();
 
         var queryParams = new Dictionary<string, string?>
         {
             ["is_nsfw"] = false.ToString(),
-            ["included_tags"] = category,
+            ["included_tags"] = categoryValue,
         };
         if (count > 1)
             queryParams.Add("limit", count.ToString());
         
-        string fullUrl = QueryHelpers.AddQueryString(WaifuApiTypes.WaifuIm.GetBaseUri(), queryParams);
-
-        List<string> results = new();
+        string fullUrl = QueryHelpers.AddQueryString(baseUri, queryParams);
 
         HttpResponseMessage response = await client.GetAsync(fullUrl);
         response.EnsureSuccessStatusCode();
 
         string json = await response.Content.ReadAsStringAsync();
-        var items = JsonSerializer.Deserialize<WaifuImApiReference.MultiplePicApiResponse>(json);
 
-        foreach (var image in items!.Images)
-        {
-            results.Add(image.Url);
-        }
+        var res = JsonSerializer.Deserialize<WaifuImApiReference.MultiplePicApiResponse>(json);
         
-        return results;
+        return res!.Images.Select(x => x.Url).ToList();
     }
 
+    private async Task<List<string>> FetchApiNekosiaAsync(int count, int categoryId)
+    {
+        IApiDefinition apiDefinition = WaifuApiTypes.Nekosia;
+        string categoryValue = apiDefinition.Categories.Single(x => x.Id == categoryId).Value;
+        string baseUri = apiDefinition.GetBaseUri();
+        string url = string.Format(baseUri, categoryValue);
+        bool multiple = count > 1;
+        
+        using HttpClient client = new HttpClient();
+
+        var queryParams = new Dictionary<string, string?>
+        {
+            ["rating"] = "safe"
+        };
+        if (multiple)
+            queryParams.Add("count", count.ToString());
+        
+        string fullUrl = QueryHelpers.AddQueryString(url, queryParams);
+
+        HttpResponseMessage response = await client.GetAsync(fullUrl);
+        response.EnsureSuccessStatusCode();
+
+        string json = await response.Content.ReadAsStringAsync();
+
+        List<string> imgUrls = new();
+        
+        if (multiple)
+        {
+            var res = JsonSerializer.Deserialize<NekosiaApiReference.MultiplePicsApiResponse>(json);
+            imgUrls.AddRange(res!.Images.Select(x => x.Image.original.url));
+        }
+        else
+        {
+            var res = JsonSerializer.Deserialize<NekosiaApiReference.SinglePicResponse>(json);
+            imgUrls.Add(res!.Image.original.url);
+        }
+        
+        return imgUrls;
+    }
 }
