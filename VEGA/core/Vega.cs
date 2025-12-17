@@ -74,7 +74,11 @@ public class Vega
 
                 // Case of missing perm : wrap MissingPerm object into a custom exception and throw it
                 if (result is MissingPermissionsResult missingPerm)
+                {
+                    await interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+                    deferred = true;
                     throw new MissingPermissionException(missingPerm);
+                }
             }
             catch (MissingPermissionException pex)
             {   
@@ -128,15 +132,14 @@ public class Vega
                     // Reply to interaction
                     else
                     {   
-                        // Check if interaction can still be responded to directly
                         var elapsed = DateTimeOffset.UtcNow - interaction.CreatedAt;
 
+                        // Check if interaction can still be responded to directly
+                        // If not, log and do nothing
                         if (elapsed.TotalSeconds > 2.5)
                         {
-                            
                             Console.WriteLine("Interaction took more than 2 (1 sec margin) sec to process).");
                         }
-                        // If not, simply send a text message in the channel
                         else
                         {
                             await interaction.SendResponseAsync(
