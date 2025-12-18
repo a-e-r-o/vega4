@@ -4,101 +4,60 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
+using Models.CommandSpecificModels;
+using static Core.GlobalRegistry;
+using Services.CommandSpecificServices;
+using Microsoft.Extensions.DependencyInjection;
+using Exceptions;
 
 namespace SlashCommands;
 
-public class WaifuCategoryChoicesProvider : IChoicesProvider<ApplicationCommandContext>
-{
-    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(SlashCommandParameter<ApplicationCommandContext> parameter)
-    {
-        var list = new List<ApplicationCommandOptionChoiceProperties>
-        {
-            new("Any", "waifu"),
-            new("Megumin", "megumin"),
-            new("Neko", "neko"),
-            new("Shinobu", "shinobu")
-        }.AsEnumerable();
-        
-        return ValueTask.FromResult(list);
-    }
-}
-
-public class SingleWaifuApiResponse{
-    [JsonPropertyName("url")]
-    public string? Url {get; set;}
-}
-
-public class MultipleWaifuApiResponse{
-    [JsonPropertyName("files")]
-    public IEnumerable<string>? PicUrls {get; set;}
-}
- 
 public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
 {
-    private const string waifuApiSingleBaseUri = "https://api.waifu.pics/{0}/{1}";
-    private const string waifuApiManyBaseUri = "https://api.waifu.pics/many/{0}/{1}";
-
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
     [RequireBotPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
-    [SlashCommand("waifu", "Send a waifu image")]
+    [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
+    [SlashCommand("waifu", "Sends waifu images")]
     public async Task Execute(
         [SlashCommandParameter(
             Name = "type", 
             Description = "Type of waifu to send",
-            ChoicesProviderType = typeof(WaifuCategoryChoicesProvider)
-        )] string type = "waifu",
+            ChoicesProviderType = typeof(SfwWaifuCategoryChoicesProvider)
+        )] int type = 0,
         [SlashCommandParameter(
             Name = "count", Description = "Number of waifu to send", MinValue = 1, MaxValue = 5
         )] int count = 1
     )
     {
-        bool multiple = count > 1;
-        string baseUri = multiple ? waifuApiManyBaseUri : waifuApiSingleBaseUri;
-        string url = string.Format(baseUri, "sfw", type);
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage()
+        );
+
+        var waifuApiService = MainServiceProvider.GetRequiredService<WaifuApiService>();
         
-        List<string> results = new();
-
-        using HttpClient client = new HttpClient();
-
         try
         {
-            if (multiple)
-            {
-                HttpResponseMessage response = await client.PostAsync(
-                    url,
-                    // The "exclude" field is required, even when empty
-                    new FormUrlEncodedContent(new Dictionary<string, string> {{"exclude", ""}})
-                );
-                response.EnsureSuccessStatusCode();
+            List<string> imageUrls = await waifuApiService.FetchImagesAsync(count, type);
+            
+            string response = string.Join("\n",imageUrls);
 
-                string json = await response.Content.ReadAsStringAsync();
-                var items = JsonSerializer.Deserialize<MultipleWaifuApiResponse>(json);
-
-                foreach (var picUrl in items!.PicUrls!.Take(count))
-                {
-                    results.Add(picUrl);
-                }
-            }
-            else
-            {
-                HttpResponseMessage response = await client.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-
-                string json = await response.Content.ReadAsStringAsync();
-                var item = JsonSerializer.Deserialize<SingleWaifuApiResponse>(json);
-
-                results.Add(item!.Url!);
-            }
+            await Context.Interaction.SendFollowupMessageAsync(response);
         }
+        // Business exception, add info that deferred msg exists and pass down exception
+        catch (SlashCommandBusinessException ex)
+        {
+            ex.Deferred = true;
+            throw;
+        }
+        // API error : business exception with explicit message
+        catch (HttpRequestException httpEx)
+        {
+            throw new SlashCommandBusinessException($"The call to the waifu API failed. Code : {httpEx.StatusCode}", true);
+        }
+        // Other : classic exception
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur inattendue: {ex.Message}");
+            throw new SlashCommandGenericException(ex.Message, true);
         }
-
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(
-                string.Join("\n", results)
-            )
-        );
     }
 }

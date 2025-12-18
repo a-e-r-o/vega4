@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Core;
+using Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Models.Entities;
@@ -70,7 +71,7 @@ public class GuildSettingsService
     {
         // Second level validation -> should have been checked a first time in business code
         if (guildId != newSettings.GuildId)
-            throw new BusinessException("GuildId and GuildSettings ID mismatch");
+            throw new SlashCommandBusinessException("GuildId and GuildSettings ID mismatch");
 
         GuildSettings? existingSettings = _dbContext.GuildSettings.Find(guildId);
         if (existingSettings is null)
@@ -104,7 +105,7 @@ public class GuildSettingsService
         GuildSettings settings = await GetByIdAsync(guildId);
 
         if (settings.Triggers.Count >= MAX_TRIGGER_COUNT_BY_GUID)
-            throw new BusinessException($"You can't create more than {MAX_TRIGGER_COUNT_BY_GUID} trigger for each server");
+            throw new SlashCommandBusinessException($"You can't create more than {MAX_TRIGGER_COUNT_BY_GUID} triggers for each server");
 
         settings.Triggers.Add(trigger);
 
@@ -124,7 +125,7 @@ public class GuildSettingsService
         GuildSettings settings = await GetByIdAsync(guildId);
 
         if (settings.Triggers.Count == 0)
-            throw new BusinessException($"There are no triggers on this server");
+            throw new SlashCommandBusinessException($"There are no triggers on this server");
         
         var triggerId = settings.Triggers.OrderByDescending(x => x.CreatedAt)
                                             .ToList()

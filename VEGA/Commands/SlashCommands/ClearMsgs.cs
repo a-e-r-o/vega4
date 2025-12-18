@@ -1,3 +1,4 @@
+using Exceptions;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services;
@@ -25,33 +26,40 @@ public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
             InteractionCallback.DeferredMessage(MessageFlags.Ephemeral)
         );
 
-        IAsyncEnumerable<RestMessage> messages = Context.Channel.GetMessagesAsync(
-            new PaginationProperties<ulong> 
-            {
-                BatchSize = 100
-            }
-        );
-
-        List<ulong> msgIds = new();
-
-        await foreach (var message in messages)
+        try
         {
-            msgIds.Add(message.Id);
-            
-            if (msgIds.Count >= msgCount)
+            IAsyncEnumerable<RestMessage> messages = Context.Channel.GetMessagesAsync(
+                new PaginationProperties<ulong> 
+                {
+                    BatchSize = 100
+                }
+            );
+
+            List<ulong> msgIds = new();
+
+            await foreach (var message in messages)
             {
-                break;
+                msgIds.Add(message.Id);
+                
+                if (msgIds.Count >= msgCount)
+                {
+                    break;
+                }
             }
+
+            await Context.Channel.DeleteMessagesAsync(msgIds);
+
+            await Context.Interaction.SendFollowupMessageAsync(
+                new InteractionMessageProperties
+                {
+                    Content = $"Here you go, I deleted {msgIds.Count} messages !",
+                    Flags = MessageFlags.Ephemeral
+                }
+            );
         }
-
-        await Context.Channel.DeleteMessagesAsync(msgIds);
-
-        await Context.Interaction.SendFollowupMessageAsync(
-            new InteractionMessageProperties
-            {
-                Content = $"Here you go, I deleted {msgIds.Count} messages !",
-                Flags = MessageFlags.Ephemeral
-            }
-        );
+        catch(Exception ex)
+        {
+            throw new SlashCommandGenericException(ex.Message, true);
+        }
     }
 }

@@ -33,18 +33,33 @@ public class MessageCreateHandler
             // No triggers set for this guild
             if (settings.Triggers.Count != 0)
             {
-                string res = checkTriggers(message, settings);
+                Trigger? trigger = checkTriggers(message, settings);
 
-                if (res != string.Empty)
-                    await message.Channel.SendMessageAsync(res);
+                if (trigger != null)
+                {
+                    try
+                    {
+                        if (trigger.PingOnReply)
+                            await message.Channel.SendMessageAsync(trigger.Response);
+                        else
+                            await message.ReplyAsync(trigger.Response);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Cannot send trigger response :", ex.Message);
+                    }
+                }
             }
         }
 
         stopwatch.Stop();
+
+        #if DEBUG
         Console.WriteLine("MessageCreate handled in {0} ms", stopwatch.ElapsedMilliseconds);
+        #endif
     }
 
-    private string checkTriggers(Message msg, GuildSettings settings){
+    private Trigger? checkTriggers(Message msg, GuildSettings settings){
         Trigger foundPattern;
 
         // Find if the message matches any trigger pattern
@@ -54,7 +69,7 @@ public class MessageCreateHandler
                 if (Regex.IsMatch(msg.Content, pattern.Pattern, (RegexOptions)pattern.RegexOptions))
                 {
                     foundPattern = pattern;
-                    return foundPattern.Response;
+                    return foundPattern;
                 }
             } 
             catch (Exception ex)
@@ -63,6 +78,6 @@ public class MessageCreateHandler
             }
         }
 
-        return string.Empty;
+        return null;
     }
 }

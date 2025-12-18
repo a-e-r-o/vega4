@@ -4,6 +4,7 @@ using Core.Models;
 using Core;
 using Handlers;
 using Microsoft.Extensions.Caching.Memory;
+using Services.CommandSpecificServices;
 
 // Configuration
 IConfiguration appSettings = new ConfigurationBuilder()
@@ -28,6 +29,8 @@ var serviceProvider = new ServiceCollection()
                             // AppDbContext with Configuration
                             .AddScoped<AppDbContext>()
                             .AddScoped<GuildSettingsService>()
+                            // Command specific services
+                            .AddTransient<WaifuApiService>()
                             // Logging
                             .AddLogging()
                             .BuildServiceProvider();

@@ -12,6 +12,7 @@ using Core.Models;
 using Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
+using Exceptions;
 
 namespace Core;
 
@@ -59,27 +60,61 @@ public class Vega
                 return;
 
             string? errorMsg = null;
-
+            bool deferred = false;
+            
             try
             {
                 IExecutionResult result = await ApplicationCommandService.ExecuteAsync(
                     new ApplicationCommandContext(applicationCommandInteraction, client)
                 ).ConfigureAwait(false);
 
+                // Case of exception thrown : rethrow the exception wrapped in the execution result
                 if (result is ExecutionExceptionResult executionExceptionResult)
+                    throw executionExceptionResult.Exception; 
+
+                // Case of missing perm : wrap MissingPerm object into a custom exception and throw it
+                if (result is MissingPermissionsResult missingPerm)
                 {
-                    throw executionExceptionResult.Exception; // Rethrow the wrapped exception
+                    await interaction.SendResponseAsync(InteractionCallback.DeferredMessage(MessageFlags.Ephemeral));
+                    deferred = true;
+                    throw new MissingPermissionException(missingPerm);
                 }
             }
-            // Business exception = expected error that can be shown to user
-            catch (BusinessException bex)
+            catch (MissingPermissionException pex)
+            {   
+                var missingPerms = Enum.GetValues<Permissions>()
+                                       .Cast<Permissions>()
+                                       .Where(flag => pex.MissingPerm.MissingPermissions.HasFlag(flag))
+                                       .Select(flag => flag.ToString());
+
+                string strMissingPerms = string.Join(",", missingPerms);
+
+                switch (pex.MissingPerm.EntityType)
+                {
+                    case MissingPermissionsResultEntityType.Bot: 
+                        errorMsg = $"Can't execute command. Bot is missing permissions : {strMissingPerms}";
+                        break;
+                    case MissingPermissionsResultEntityType.User:
+                        errorMsg = $"You can't use this command. Missing permissions : {strMissingPerms}";
+                        break;
+                }
+            }
+            // Expected exception with user-readable message
+            catch (SlashCommandBusinessException bex)
             {
                 errorMsg = bex.Message;
+                deferred = bex.Deferred;
             }
-            // Other exceptions = unexpected error that should be logged
+            // Unexpected, caught exception
+            catch (SlashCommandGenericException gex)
+            {
+                errorMsg = "Something went wrong while executing command ¯\\\\_(ツ)\\_/¯";
+                deferred = gex.Deferred;
+            }
+            // Worst case scenario : unexcepted uncaught exception
             catch (Exception ex)
             {
-                errorMsg = "Interaction failed : something when wrong in the server. Ask the dev to fix their broken code";
+                errorMsg = "Something went terribly wrong while executing command. Ask the dev to fix their broken code";
             }
 
             // If nay exception occurred, send failure response
@@ -87,13 +122,41 @@ public class Vega
             {
                 try
                 {
-                    await interaction.SendResponseAsync(
-                        InteractionCallback.Message(errorMsg)
-                    );
+                    // Reply in followup response to the deferred message
+                    if (deferred)
+                    {
+                        await interaction.SendFollowupMessageAsync(
+                            errorMsg
+                        );
+                    }
+                    // Reply to interaction
+                    else
+                    {   
+                        var elapsed = DateTimeOffset.UtcNow - interaction.CreatedAt;
+
+                        // Check if interaction can still be responded to directly
+                        // If not, log and do nothing
+                        if (elapsed.TotalSeconds > 2.5)
+                        {
+                            Console.WriteLine("Interaction took more than 2 (1 sec margin) sec to process).");
+                        }
+                        else
+                        {
+                            await interaction.SendResponseAsync(
+                                InteractionCallback.Message(
+                                    new InteractionMessageProperties
+                                    {
+                                        Content = errorMsg,
+                                        Flags = MessageFlags.Ephemeral
+                                    }
+                                )
+                            );
+                        }
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Failed to send interaction failure response.");  
+                    Console.WriteLine("Failed to send interaction failure response.", ex.Message);
                 }
             }
         };
