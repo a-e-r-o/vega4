@@ -1,22 +1,20 @@
+using static Core.GlobalRegistry;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using NetCord.Gateway;
 using NetCord.Rest;
-using static Core.GlobalRegistry;
 using Models.Entities;
 using System.Text.RegularExpressions;
+using Services;
 
 namespace Handlers;
 
 public class MessageCreateHandler
 {
-    //private readonly ICacheService _cache; // ton cache singleton
-    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MessageCreateHandler> _logger;
 
-    public MessageCreateHandler(/*ICacheService cache,*/ ILogger<MessageCreateHandler> logger)
+    public MessageCreateHandler(ILogger<MessageCreateHandler> logger)
     {
-        //_cache = cache;
         _logger = logger;
     }
 
@@ -72,7 +70,7 @@ public class MessageCreateHandler
                     return foundPattern;
                 }
             } 
-            catch (Exception ex)
+            catch (Exception)
             {
                 
             }

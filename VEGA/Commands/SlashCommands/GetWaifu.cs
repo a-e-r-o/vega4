@@ -14,6 +14,9 @@ namespace SlashCommands;
 
 public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
 {
+    public const int COUNT_MIN = 1;
+    public const int COUNT_MAX = 5;
+
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
     [RequireBotPermissions<ApplicationCommandContext>(Permissions.AttachFiles)]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
@@ -29,6 +32,11 @@ public class GetWaifu : ApplicationCommandModule<ApplicationCommandContext>
         )] int count = 1
     )
     {
+        // Don't trust Discord on minmax values validation
+        if (
+            count > COUNT_MAX || count < COUNT_MIN
+        ) throw new SlashCommandBusinessException("Invalid params");
+
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage()
         );

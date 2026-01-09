@@ -6,6 +6,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Models.Entities;
 using NetCord.JsonModels;
 
+namespace Services;
+
 public class GuildSettingsService
 {
     private readonly AppDbContext _dbContext;

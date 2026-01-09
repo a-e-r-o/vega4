@@ -1,3 +1,4 @@
+using Exceptions;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
@@ -6,16 +7,33 @@ namespace SlashCommands;
 
 public class DiceRoll : ApplicationCommandModule<ApplicationCommandContext>
 {
+    public const int FACES_MIN = 2;
+    public const int FACES_MAX = 100;
+    public const int FACES_DEFAULT = 6;
+
+    public const int ROLLS_MIN = 1;
+    public const int ROLLS_MAX = 100;
+    public const int ROLLS_DEFAULT = 1;
+
+
     [SlashCommand("diceroll", "Roll a dice")]
     public async Task Execute(
         [SlashCommandParameter(
-            Name = "faces", Description = "Number of sides in the dice", MinValue = 2, MaxValue = 100
-        )] int diceFaces = 6,
+            Name = "faces", Description = "Number of sides on the dice", MinValue = FACES_MIN, MaxValue = FACES_MAX
+        )] int diceFaces = FACES_DEFAULT,
         [SlashCommandParameter(
-            Name = "rolls", Description = "Number dices to roll", MinValue = 1, MaxValue = 100
-        )] int rollCount = 1
+            Name = "rolls", Description = "Number of dices to roll", MinValue = ROLLS_MIN, MaxValue = ROLLS_MAX
+        )] int rollCount = ROLLS_DEFAULT
     )
     {
+        // Don't trust Discord on minmax values validation
+        if (
+            diceFaces > FACES_MAX || 
+            diceFaces < FACES_MIN ||
+            rollCount > ROLLS_MAX ||
+            rollCount < ROLLS_MAX
+        ) throw new SlashCommandBusinessException("Invalid params");
+
         List<string> results = new();
 
         for (int i = 0; i < rollCount; i++)

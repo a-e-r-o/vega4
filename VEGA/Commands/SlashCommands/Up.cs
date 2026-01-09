@@ -3,7 +3,6 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Core;
 using Microsoft.Extensions.DependencyInjection;
-using Core;
 
 namespace SlashCommands;
 

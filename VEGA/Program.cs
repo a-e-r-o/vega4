@@ -4,6 +4,7 @@ using Core.Models;
 using Core;
 using Handlers;
 using Microsoft.Extensions.Caching.Memory;
+using Services;
 using Services.CommandSpecificServices;
 
 // Configuration
@@ -19,17 +20,16 @@ Configuration configuration = new Configuration
 
 // Build DI container
 var serviceProvider = new ServiceCollection()
-                            // Instance de la Configuration
+                            // Singleton
                             .AddSingleton(configuration)
-                            // CreateMessage Handler
                             .AddSingleton<MessageCreateHandler>()
                             .AddSingleton<IMemoryCache, MemoryCache>()
-                            // Vega instance
                             .AddSingleton<Vega>()
-                            // AppDbContext with Configuration
+                            .AddSingleton<FeedService>()
+                            // Scoped
                             .AddScoped<AppDbContext>()
                             .AddScoped<GuildSettingsService>()
-                            // Command specific services
+                            // Transient
                             .AddTransient<WaifuApiService>()
                             // Logging
                             .AddLogging()
