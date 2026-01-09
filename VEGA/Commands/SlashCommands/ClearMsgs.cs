@@ -8,6 +8,9 @@ namespace SlashCommands;
 
 public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
 {
+    public const int MSG_COUNT_MIN = 1;
+    public const int MSG_COUNT_MAX = 100;
+    
     [SlashCommand("clear", "Deletes recent messages")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.ManageMessages)]
@@ -16,12 +19,17 @@ public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(
             Name = "count",
             Description = "Number of messages to delete",
-            MaxValue = 100,
-            MinValue = 1
+            MinValue = MSG_COUNT_MIN,
+            MaxValue = MSG_COUNT_MAX
         )]
         int msgCount
     )
     {
+        // Don't trust Discord on minmax values validation
+        if (
+            msgCount > MSG_COUNT_MAX || msgCount < MSG_COUNT_MIN
+        ) throw new SlashCommandBusinessException("Invalid params");
+
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage(MessageFlags.Ephemeral)
         );

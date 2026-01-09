@@ -5,6 +5,7 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
+using Services;
 using static Core.GlobalRegistry;
 
 namespace SlashCommands;
@@ -69,6 +70,13 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
         }
     }
 
+
+    public const int MAX_TRIGGER_COUNT_BY_GUID = 10;
+    public const int REGEX_MIN_LENGTH = 3;
+    public const int REGEX_MAX_LENGTH = 50;
+    public const int RESPONSE_MIN_LENGTH = 1;
+    public const int RESPONSE_MAX_LENGTH = 2000;
+
     [SubSlashCommand("add", "Add a new trigger")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.ManageMessages)]
@@ -76,12 +84,12 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(
             Name = "regex",
             Description = "Pattern to match using regex notation",
-            MinLength = 3, MaxLength = 50
+            MinLength = REGEX_MIN_LENGTH, MaxLength = REGEX_MAX_LENGTH
         )] string regex,
         [SlashCommandParameter(
             Name = "response",
             Description = "Response message to send when pattern is detected",
-            MinLength = 1, MaxLength = 2000
+            MinLength = RESPONSE_MIN_LENGTH, MaxLength = RESPONSE_MAX_LENGTH
         )] string response,
         [SlashCommandParameter(
             Name = "regexoptions",
@@ -90,12 +98,18 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
         )] int regexOptions = 0
     )
     {
+                // Don't trust Discord on minmax values validation
+        if (
+            regex.Length > REGEX_MAX_LENGTH || regex.Length < REGEX_MIN_LENGTH ||
+            response.Length > RESPONSE_MAX_LENGTH || response.Length < RESPONSE_MIN_LENGTH
+        ) throw new SlashCommandBusinessException("Invalid params");
+
         GuildSettingsService service = MainServiceProvider.GetRequiredService<GuildSettingsService>();
         var guildId = Context.Interaction.GuildId ?? throw new SlashCommandBusinessException("Unable to retrieve guild");
 
         Trigger newTrigger = new Trigger(guildId, regex, response, regexOptions);
         
-        var newSettings = await service.AddTrigger(guildId, newTrigger);
+        _ = await service.AddTrigger(guildId, newTrigger);
 
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.Message($"Added trigger with pattern `/{regex}/{regexOptions}`")
