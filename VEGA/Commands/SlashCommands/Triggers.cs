@@ -13,6 +13,11 @@ namespace SlashCommands;
 [SlashCommand("trigger", "Manage triggers patterns for this server")]
 public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
 {
+    const int REGEX_MIN_LENGTH = 3;
+    const int REGEX_MAX_LENGTH = 50;
+    const int RESPONSE_MIN_LENGTH = 1;
+    const int RESPONSE_MAX_LENGTH = 2000;
+    
 
     [SubSlashCommand("list", "List triggers on this server")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
@@ -71,12 +76,6 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
     }
 
 
-    public const int MAX_TRIGGER_COUNT_BY_GUID = 10;
-    public const int REGEX_MIN_LENGTH = 3;
-    public const int REGEX_MAX_LENGTH = 50;
-    public const int RESPONSE_MIN_LENGTH = 1;
-    public const int RESPONSE_MAX_LENGTH = 2000;
-
     [SubSlashCommand("add", "Add a new trigger")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]
     [RequireUserPermissions<ApplicationCommandContext>(Permissions.ManageMessages)]
@@ -98,7 +97,7 @@ public class Triggers : ApplicationCommandModule<ApplicationCommandContext>
         )] int regexOptions = 0
     )
     {
-                // Don't trust Discord on minmax values validation
+        // Don't trust Discord on minmax values validation
         if (
             regex.Length > REGEX_MAX_LENGTH || regex.Length < REGEX_MIN_LENGTH ||
             response.Length > RESPONSE_MAX_LENGTH || response.Length < RESPONSE_MIN_LENGTH

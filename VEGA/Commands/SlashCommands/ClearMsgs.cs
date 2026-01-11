@@ -8,8 +8,8 @@ namespace SlashCommands;
 
 public class ClearMsgs :  ApplicationCommandModule<ApplicationCommandContext>
 {
-    public const int MSG_COUNT_MIN = 1;
-    public const int MSG_COUNT_MAX = 100;
+    const int MSG_COUNT_MIN = 1;
+    const int MSG_COUNT_MAX = 100;
     
     [SlashCommand("clear", "Deletes recent messages")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]

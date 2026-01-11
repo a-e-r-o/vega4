@@ -10,14 +10,13 @@ namespace Services;
 
 public class GuildSettingsService
 {
-    private readonly AppDbContext _dbContext;
-    private readonly IMemoryCache _cache;
-
-    // Consts related to cache
+    // Consts related to cache. TODO : move somes of these to config
     private const int CACHE_LIFETIME_IN_MINUTES = 10;
-    // TODO : move cache lifetime and max triggercount in config
     private const int MAX_TRIGGER_COUNT_BY_GUID = 10;
     private const string CACHE_PREFIX = "guildSettings_";
+
+    private readonly AppDbContext _dbContext;
+    private readonly IMemoryCache _cache;
 
     // Getter to normalize cache key structure
     private string GetCacheKey(ulong guildId) => CACHE_PREFIX + guildId; 
