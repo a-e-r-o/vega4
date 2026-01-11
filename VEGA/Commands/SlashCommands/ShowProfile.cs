@@ -9,7 +9,7 @@ namespace SlashCommands;
 
 public class ShowProfile :  ApplicationCommandModule<ApplicationCommandContext>
 {
-    public const string SIZE_URL_PARAM = "?size=512";
+    const string SIZE_URL_PARAM = "?size=512";
 
     [SlashCommand("showprofile", "Show avatar and banner of a user in high res")]
     [RequireContext<ApplicationCommandContext>(RequiredContext.Guild)]

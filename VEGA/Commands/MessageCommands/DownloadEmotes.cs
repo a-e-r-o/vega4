@@ -16,6 +16,10 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
     [MessageCommand("DownloadEmotes")]
     public async Task Execute(RestMessage message) {
 
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage(MessageFlags.Ephemeral)
+        );
+
         var msgRef = message.MessageSnapshots.FirstOrDefault() ?? null;
         string input = msgRef?.Message.Content ?? message.Content;
         
@@ -47,19 +51,16 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
                 await entryStream.WriteAsync(pngBytesArray[i]);
             }
         }
-        memoryStream.Seek(0, SeekOrigin.Begin);
 
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(
-                new InteractionMessageProperties
+        await Context.Interaction.SendFollowupMessageAsync(
+            new InteractionMessageProperties
+            {
+                Content = string.Format("Here you are, {0} emote{1} !", emotes.Count, emotes.Count > 1 ? "s" : ""),
+                Attachments = new[]
                 {
-                    Content = string.Format("Here you are, {0} emote{1} !", emotes.Count, emotes.Count > 1 ? "s" : ""),
-                    Attachments = new[]
-                    {
-                        new AttachmentProperties("emotes.zip", memoryStream)
-                    }
+                    new AttachmentProperties("emotes.zip", memoryStream)
                 }
-            )
+            }
         );
     }
 

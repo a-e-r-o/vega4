@@ -7,13 +7,13 @@ namespace SlashCommands;
 
 public class DiceRoll : ApplicationCommandModule<ApplicationCommandContext>
 {
-    public const int FACES_MIN = 2;
-    public const int FACES_MAX = 100;
-    public const int FACES_DEFAULT = 6;
+    const int FACES_MIN = 2;
+    const int FACES_MAX = 100;
+    const int FACES_DEFAULT = 6;
 
-    public const int ROLLS_MIN = 1;
-    public const int ROLLS_MAX = 100;
-    public const int ROLLS_DEFAULT = 1;
+    const int ROLLS_MIN = 1;
+    const int ROLLS_MAX = 100;
+    const int ROLLS_DEFAULT = 1;
 
 
     [SlashCommand("diceroll", "Roll a dice")]

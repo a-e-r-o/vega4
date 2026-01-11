@@ -25,7 +25,7 @@ public class FeedService(AppDbContext dbContext, IMemoryCache cache)
         
         _timersCancellationTokens.AddOrUpdate
         (
-            feedProperties.Id,
+            feedProperties.FeedId,
             ccts,
             (key, existingValue) => ccts
         );
