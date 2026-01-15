@@ -90,7 +90,7 @@ public class Vega
 
                 string strMissingPerms = string.Join(",", missingPerms);
 
-                switch (pex.MissingPerm.EntityType)
+                switch (pex.MissingPerm.EntityType) 
                 {
                     case MissingPermissionsResultEntityType.Bot: 
                         errorMsg = $"Can't execute command. Bot is missing permissions : {strMissingPerms}";
