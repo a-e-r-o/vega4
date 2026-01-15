@@ -8,8 +8,18 @@ namespace Core;
 
 public class AppDbContext : DbContext
 {
+    // Guild settings and triggers
     public DbSet<GuildSettings> GuildSettings { get; set; }
     public DbSet<Trigger> Triggers { get; set; }
+
+    // Feeds properties
+    private const string FEED_TABLE_NAME = "feeds";
+    public DbSet<FeedProperties> FeedProperties { get; set; }
+
+    // Feeds recents posts history
+    private const string FEED_HISTORY_TABLE_NAME = "feeds_recent_posts";
+    public DbSet<FeedPostReceit> FeedHistory { get; set; }
+
 
     private Configuration _config { get; }
 
@@ -27,22 +37,43 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Table names are derived from Entity name, using Snake Case convention
+        /* Table names are derived from Entity name, using Snake Case convention */
+
+        // Define Guidsettings entityId
         modelBuilder.Entity<GuildSettings>()
-                    .HasKey(g => g.GuildId);    // Primary Key
+                    .HasKey(g => g.GuildId);
 
+        // Define Trigger entityId
         modelBuilder.Entity<Trigger>()
-                    .HasKey(t => t.TriggerId);  // Primary Key
+                    .HasKey(t => t.TriggerId);
 
+        // Define TriggerId default value : new GUID
         modelBuilder.Entity<Trigger>()
                     .Property(t => t.TriggerId)
                     .HasDefaultValueSql("gen_random_uuid()")  // Default value : new Guid 
                     .ValueGeneratedOnAdd();
 
+        // Link Triggers to GuildSettings
         modelBuilder.Entity<GuildSettings>()
                     .HasMany(g => g.Triggers)           // Trigger list
                     .WithOne()                          // Navigation property not needed
                     .HasForeignKey(t => t.GuildId)      // Foreign Key
                     .OnDelete(DeleteBehavior.Cascade);  // On delete cascade
+
+        // Define FeedProperties entityId with explicit column name
+        modelBuilder.Entity<FeedProperties>()
+                    .ToTable("feeds") // Set custom table name
+                    .HasKey(t => t.FeedId);
+
+        // Define Feedproperty default value : new GUID
+        modelBuilder.Entity<FeedProperties>()
+                    .Property(t => t.FeedId)
+                    .HasDefaultValueSql("gen_random_uuid()")  // Default value : new Guid 
+                    .ValueGeneratedOnAdd();
+        
+        // Define FeedHistoryPost composite key (FeedId + PostId)
+        modelBuilder.Entity<FeedPostReceit>()
+                    .ToTable("feeds_recent_posts") // Set custom table name
+                    .HasKey(t => new { t.FeedId, t.PostId });
     }
 }

@@ -25,6 +25,7 @@ var serviceProvider = new ServiceCollection()
                             .AddSingleton<MessageCreateHandler>()
                             .AddSingleton<IMemoryCache, MemoryCache>()
                             .AddSingleton<Vega>()
+                            // Feeds service
                             .AddSingleton<FeedService>()
                             // Scoped
                             .AddScoped<AppDbContext>()
