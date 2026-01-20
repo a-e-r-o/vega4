@@ -21,12 +21,16 @@ public class ShowProfile :  ApplicationCommandModule<ApplicationCommandContext>
         string strUserId
     )
     {
-        if (!ulong.TryParse(strUserId, out ulong userId)) throw new SlashCommandBusinessException("Incorrect ID");
-
         // Defer message response before any API call
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage()
         );
+
+        // Sanitize input
+        strUserId = new string(strUserId.Where(char.IsDigit).ToArray());
+
+        // Validate user ID
+        if (!ulong.TryParse(strUserId, out ulong userId)) throw new SlashCommandBusinessException("Incorrect ID", true);
 
         try
         {

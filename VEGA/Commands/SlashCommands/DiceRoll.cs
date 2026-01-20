@@ -31,7 +31,7 @@ public class DiceRoll : ApplicationCommandModule<ApplicationCommandContext>
             diceFaces > FACES_MAX || 
             diceFaces < FACES_MIN ||
             rollCount > ROLLS_MAX ||
-            rollCount < ROLLS_MAX
+            rollCount < ROLLS_MIN
         ) throw new SlashCommandBusinessException("Invalid params");
 
         List<string> results = new();
