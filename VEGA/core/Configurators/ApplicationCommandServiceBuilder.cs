@@ -44,7 +44,7 @@ namespace Core.Configurators
         public async Task<ApplicationCommandService<ApplicationCommandContext>> BuildAsync(ShardedGatewayClient client)
         {
             // Register all commands to Discord
-            await _appCommandService.RegisterCommandsAsync(client.Rest, client.Id, 376040838540820481);
+            await _appCommandService.RegisterCommandsAsync(client.Rest, client.Id);
             
             return _appCommandService;
         }
