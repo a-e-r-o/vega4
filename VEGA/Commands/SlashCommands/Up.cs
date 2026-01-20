@@ -13,6 +13,7 @@ public class Up : ApplicationCommandModule<ApplicationCommandContext>
     {
         var self = await Context.Client.Rest.GetUserAsync(Context.Client.Id);
 
+        var uptime = DateTime.UtcNow - GlobalRegistry.StartTime;
         var embed = new EmbedProperties
         {
             Title = "ᴠ.ᴇ.ɢ.ᴀ.",
@@ -24,7 +25,7 @@ public class Up : ApplicationCommandModule<ApplicationCommandContext>
                 new EmbedFieldProperties
                 {
                     Name = "Uptime",
-                    Value = (DateTime.UtcNow - GlobalRegistry.StartTime).ToString(@"dd\.hh\:mm\:ss")
+                    Value = string.Format("{0} days, {1}h, {2}m, {3}s", uptime.Days, uptime.Hours, uptime.Minutes, uptime.Seconds)
                 },
                 new EmbedFieldProperties
                 {
@@ -38,7 +39,7 @@ public class Up : ApplicationCommandModule<ApplicationCommandContext>
             },
             Footer = new EmbedFooterProperties
             {
-                Text = "UwU"
+                Text = "Be like the penguin. March to the mountains"
             }
         };
 
