@@ -1,30 +1,39 @@
-# Deploy VEGA (bot Discord .NET) vers un hôte Linux via SSH — TEMPLATE.
+# Déploiement de VEGA (bot Discord .NET) vers un hôte Linux via SSH.
 #
-# Copiez ce fichier vers `deploy.ps1` (ignoré par git) et renseignez vos valeurs :
-# hôte SSH, chemin distant, nom du service systemd, runtime cible.
+# ┌─ À FAIRE UNE FOIS ─────────────────────────────────────────────────────────┐
+# │ 1. Copier ce fichier en `deploy.ps1` — il est ignoré par git.              │
+# │ 2. Renseigner les trois valeurs de `param` ci-dessous : l'hôte SSH, le     │
+# │    chemin distant, et le nom du service systemd.                           │
+# │ 3. Vérifier `$Runtime` si l'hôte n'est pas en ARM 64 bits.                 │
+# └────────────────────────────────────────────────────────────────────────────┘
 #
-# Calqué sur redsunsbio, adapté à .NET : on publie un binaire self-contained
-# (aucun runtime .NET requis sur l'hôte).
+# Pourquoi la copie n'est pas versionnée : une fois remplie, elle ne décrit plus
+# le bot mais l'endroit où il est posé.
+#
+# Stratégie : publish self-contained -> staging -> tar+gzip -> scp -> extraction
+# distante. Le binaire embarque son runtime, rien à installer côté hôte.
 #
 # Migrations : appliquées AUTOMATIQUEMENT à chaque déploiement (toutes les
 # database/migrations/*.sql dans l'ordre, via psql sur l'hôte — voir scripts/migrate.sh).
 # Idempotentes (CREATE ... IF NOT EXISTS), donc rejouables sans risque.
 # Utiliser -SkipMigrate pour les sauter exceptionnellement.
 #
-# Prérequis côté hôte : psql, un service systemd, et un appsettings.json (token + connexionString)
-# posé manuellement — jamais poussé ni écrasé par ce script. Le bootstrap de base
-# (database/createdb.sql) se joue à la main une fois, hors de ce script.
+# Prérequis côté hôte : psql, un service systemd, et un appsettings.json (token +
+# connexionString) posé manuellement — jamais poussé ni écrasé par ce script. Le
+# bootstrap de base (database/createdb.sql) se joue à la main une fois, hors script.
 #
 # Usage :
 #   .\deploy.ps1                        # publish + deploy + migrations + restart service
 #   .\deploy.ps1 -SkipBuild             # deploy seul (le dossier publish doit exister)
 #   .\deploy.ps1 -SkipMigrate           # ne pas appliquer les migrations
-#   .\deploy.ps1 -PiHost user@host      # hôte alternatif
+#   .\deploy.ps1 -PiHost user@host      # cible ponctuelle, sans toucher au fichier
 
 param(
-    [string]$PiHost = "user@your-server",
-    [string]$RemotePath = "/srv/vega",
-    [string]$ServiceName = "vega",
+    # ---- LES TROIS VALEURS À RENSEIGNER ----
+    [string]$PiHost = "utilisateur@machine",
+    [string]$RemotePath = "/chemin/vers/le/dossier/du/bot",
+    [string]$ServiceName = "nom-du-service-systemd",
+    # ----------------------------------------
     [string]$Runtime = "linux-arm64",
     [switch]$SkipBuild,
     [switch]$SkipMigrate
@@ -32,6 +41,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
+
+# Garde-fou : partir avec les valeurs d'exemple enverrait le bot nulle part, ou
+# pire, quelque part au hasard. Mieux vaut échouer sur la première ligne.
+if ($PiHost -eq "utilisateur@machine" -or $RemotePath -like "/chemin/*" -or $ServiceName -eq "nom-du-service-systemd") {
+    throw "Renseigne `$PiHost, `$RemotePath et `$ServiceName en tête de ce fichier (voir l'en-tête)."
+}
 
 $project = "VEGA/VEGA.csproj"
 $publishDir = "VEGA/bin/Release/net9.0/$Runtime/publish"
