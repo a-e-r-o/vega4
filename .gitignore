@@ -8,3 +8,6 @@ appsettings.test.json
 
 # Déploiement : contient hôte SSH / chemins réels. Versionner deploy.example.ps1 à la place.
 deploy.ps1
+
+# Notes d'analyse générées par Claude : local uniquement, pas de valeur pour le repo.
+claude/

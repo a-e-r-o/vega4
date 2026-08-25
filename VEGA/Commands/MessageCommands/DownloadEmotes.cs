@@ -20,6 +20,11 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
     public const int MAX_EMOTES = 20;
     public const string EMOTE_ZIPFILE_NAME = "emotes.zip";
 
+    // Overall budget for the "Add to server" batch (download + guild emoji creation).
+    // Kept well under Discord's 15-minute interaction-token window so a followup can
+    // always be sent, even when emoji-creation rate limits stall the batch.
+    public const int ADD_EMOTES_TIMEOUT_SECONDS = 180;
+
     // Custom-id prefixes for the widget buttons. The trailing widgetId is appended
     // with CUSTOMID_SEPARATOR; NetCord's ComponentInteractionService matches the
     // prefix and binds the remaining segment as a string parameter.
@@ -129,10 +134,12 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
     /// </summary>
     public static async Task<(byte[] DataBytes, CustomEmote EmoteInfo)[]> DownloadEmotesAsync(
         IEnumerable<CustomEmote> emotes,
-        HttpClient client
+        HttpClient client,
+        CancellationToken cancellationToken = default
     )
     {
-        var tasks = emotes.Select(async e => (DataBytes: await client.GetByteArrayAsync(e.Url), EmoteInfo: e));
+        var tasks = emotes.Select(async e =>
+            (DataBytes: await client.GetByteArrayAsync(e.Url, cancellationToken), EmoteInfo: e));
         return await Task.WhenAll(tasks);
     }
 
@@ -182,10 +189,11 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
     /// Uploads each emote as a guild emoji via Discord REST.
     /// Returns (createdCount, failures) where failures is a list of "name: reason".
     /// </summary>
-    public static async Task<(int Created, List<string> Failures)> AddEmotesToGuildAsync(
+    public static async Task<(int Created, List<string> Failures, bool TimedOut)> AddEmotesToGuildAsync(
         ulong guildId,
         (byte[] DataBytes, CustomEmote EmoteInfo)[] downloaded,
-        RestClient restClient
+        RestClient restClient,
+        CancellationToken cancellationToken = default
     )
     {
         int created = 0;
@@ -193,12 +201,21 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
 
         foreach (var (dataBytes, emoteInfo) in downloaded)
         {
+            // Budget elapsed between two emojis → stop and report partial progress.
+            if (cancellationToken.IsCancellationRequested)
+                return (created, failures, true);
+
             try
             {
                 var format = emoteInfo.Animated ? ImageFormat.Gif : ImageFormat.Png;
                 var props = new GuildEmojiProperties(emoteInfo.Name, new ImageProperties(format, dataBytes, false));
-                await restClient.CreateGuildEmojiAsync(guildId, props);
+                await restClient.CreateGuildEmojiAsync(guildId, props, cancellationToken: cancellationToken);
                 created++;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Timeout hit mid-request (route hanging or rate-limited past the budget).
+                return (created, failures, true);
             }
             catch (Exception ex)
             {
@@ -208,7 +225,7 @@ public class DownloadEmotes : ApplicationCommandModule<ApplicationCommandContext
             }
         }
 
-        return (created, failures);
+        return (created, failures, false);
     }
 }
 

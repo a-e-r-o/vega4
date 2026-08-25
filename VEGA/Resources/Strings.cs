@@ -99,6 +99,7 @@ public static class Strings
         public const string DlEmotesBtnAdd = "commands.dlEmotesBtnAdd";
         public const string DlEmotesAddedAll = "commands.dlEmotesAddedAll";
         public const string DlEmotesAddedPartial = "commands.dlEmotesAddedPartial";
+        public const string DlEmotesTimeout = "commands.dlEmotesTimeout";
         public const string ReminderTimeRequired = "commands.reminderTimeRequired";
         public const string ReminderInvalidTime = "commands.reminderInvalidTime";
         public const string ReminderSet = "commands.reminderSet";

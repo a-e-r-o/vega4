@@ -92,6 +92,7 @@
     "dlEmotesBtnAdd": "Ajouter au serveur",
     "dlEmotesAddedAll": "**{0}** emote(s) ajoutée(s) avec succès au serveur.",
     "dlEmotesAddedPartial": "**{0}** emote(s) ajoutée(s), **{1}** en échec :\n{2}",
+    "dlEmotesTimeout": "⏱️ L'ajout a pris trop de temps et a été interrompu. **{0}** emote(s) ajoutée(s) avant le timeout — relance la commande pour ajouter les restantes.",
     "reminderTimeRequired": "Vous devez spécifier au moins un délai (jours, heures ou minutes)",
     "reminderInvalidTime": "L'heure du rappel doit être dans le futur",
     "reminderSet": "Rappel défini ! Je vous rappellerai dans {0}",

@@ -63,9 +63,12 @@ public class EmoteWidgetButtons : ComponentInteractionModule<ButtonInteractionCo
         var state = DownloadEmotes.LoadWidgetState(widgetId);
         DownloadEmotes.EnsureInvoker(Context.Interaction, state);
 
-        if (Context.Interaction.User is GuildInteractionUser guildUser
-            && !guildUser.Permissions.HasFlag(Permissions.CreateGuildExpressions)
-            && !guildUser.Permissions.HasFlag(Permissions.ManageGuildExpressions))
+        // Fail-closed: anything that isn't a guild member holding the emoji-manage
+        // permission is rejected. A non-GuildInteractionUser context would otherwise
+        // slip through the previous `&&` chain without any check being applied.
+        if (Context.Interaction.User is not GuildInteractionUser guildUser
+            || (!guildUser.Permissions.HasFlag(Permissions.CreateGuildExpressions)
+                && !guildUser.Permissions.HasFlag(Permissions.ManageGuildExpressions)))
         {
             throw new SlashCommandBusinessException(Strings.Exceptions.DlEmotesUserMissingEmojiPerm);
         }
@@ -80,22 +83,53 @@ public class EmoteWidgetButtons : ComponentInteractionModule<ButtonInteractionCo
             .GetRequiredService<IHttpClientFactory>()
             .CreateClient(HttpClientNames.Emotes);
 
-        var downloaded = await DownloadEmotes.DownloadEmotesAsync(state.Emotes, httpClient);
-
-        var restClient = MainServiceProvider.GetRequiredService<Vega>().Rest;
-        var (created, failures) = await DownloadEmotes.AddEmotesToGuildAsync(
-            Context.Interaction.GuildId.Value, downloaded, restClient);
+        // Bound the whole download+upload batch. Emoji creation is heavily rate-limited,
+        // so a large batch (or a route hanging past its budget) would otherwise leave the
+        // interaction "thinking" until the token silently expires — no feedback for the user.
+        // On timeout we still report how many emotes made it through before aborting.
+        using var cts = new CancellationTokenSource(
+            TimeSpan.FromSeconds(DownloadEmotes.ADD_EMOTES_TIMEOUT_SECONDS));
 
         var locale = Context.Interaction.UserLocale;
-        string content = failures.Count == 0
-            ? ResourceHelper.GetString(Strings.Commands.DlEmotesAddedAll, locale, created)
-            : ResourceHelper.GetString(
+        int created;
+        List<string> failures;
+        bool timedOut;
+
+        try
+        {
+            var downloaded = await DownloadEmotes.DownloadEmotesAsync(state.Emotes, httpClient, cts.Token);
+
+            var restClient = MainServiceProvider.GetRequiredService<Vega>().Rest;
+            (created, failures, timedOut) = await DownloadEmotes.AddEmotesToGuildAsync(
+                Context.Interaction.GuildId.Value, downloaded, restClient, cts.Token);
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            // Timeout during the download phase, before any emoji was created.
+            created = 0;
+            failures = new List<string>();
+            timedOut = true;
+        }
+
+        string content;
+        if (timedOut)
+        {
+            content = ResourceHelper.GetString(Strings.Commands.DlEmotesTimeout, locale, created);
+        }
+        else if (failures.Count == 0)
+        {
+            content = ResourceHelper.GetString(Strings.Commands.DlEmotesAddedAll, locale, created);
+        }
+        else
+        {
+            content = ResourceHelper.GetString(
                 Strings.Commands.DlEmotesAddedPartial,
                 locale,
                 created,
                 failures.Count,
                 string.Join("\n", failures.Select(f => "• " + f))
             );
+        }
 
         await Context.Interaction.SendFollowupMessageAsync(new InteractionMessageProperties
         {

@@ -92,6 +92,7 @@
     "dlEmotesBtnAdd": "Add to server",
     "dlEmotesAddedAll": "Successfully added **{0}** emote(s) to this server.",
     "dlEmotesAddedPartial": "Added **{0}** emote(s), **{1}** failed:\n{2}",
+    "dlEmotesTimeout": "⏱️ Adding emotes took too long and was interrupted. **{0}** emote(s) were added before the timeout — run the command again to add the remaining ones.",
     "reminderTimeRequired": "You must specify at least some time (days, hours, or minutes)",
     "reminderInvalidTime": "The reminder time must be in the future",
     "reminderSet": "Reminder set! I'll remind you in {0}",
