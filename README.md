@@ -31,7 +31,7 @@ The `database/` folder is split in two:
   ```bash
   sudo -u postgres psql -f database/createdb.sql
   ```
-- **`database/migrations/`** — idempotent schema migrations (`001_core.sql` … `004_reminders.sql`), applied in lexicographic order. Each uses `CREATE ... IF NOT EXISTS`, so the runner is safe to replay on every deploy. Types match the deployed schema (`timestamp`, `varchar(n)`, …).
+- **`database/migrations/`** — idempotent schema migrations (`001_core.sql` … `003_polls.sql`), applied in lexicographic order. Each uses `CREATE ... IF NOT EXISTS`, so the runner is safe to replay on every deploy. Types match the deployed schema (`timestamp`, `varchar(n)`, …).
 
 Apply the migrations with `scripts/migrate.sh` (uses `psql`, reads `postgres.connexionString` from `appsettings.json`):
 
